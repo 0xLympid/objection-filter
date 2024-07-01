@@ -1,52 +1,74 @@
 module.exports = {
-  root: true,
+  env: {
+    node: true,
+    es2021: true,
+  },
   parser: '@typescript-eslint/parser',
-  plugins: [
-    '@typescript-eslint',
-  ],
+  parserOptions: {
+    ecmaVersion: 12,
+    sourceType: 'module',
+    project: './tsconfig.json',
+  },
+  plugins: ['@typescript-eslint', 'prettier', 'import'],
   extends: [
-    'airbnb-base',
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
-    'prettier'
+    'plugin:prettier/recommended',
+    'plugin:import/errors',
+    'plugin:import/warnings',
+    'plugin:import/typescript',
   ],
   settings: {
     'import/resolver': {
-      node: {
-        extensions: ['.js', '.ts']
-      }
-    }
+      typescript: {
+        alwaysTryTypes: true,
+        project: './tsconfig.json',
+      },
+    },
   },
   rules: {
-    'max-len': 'error',
-    'no-underscore-dangle': 'off',
-    'comma-dangle': 'off',
-    'space-before-function-paren': 'off',
-    'func-names': 'off',
-    'object-shorthand': 'off',
-    'prefer-arrow-callback': 'off',
-    'consistent-return': 'off',
-    'no-use-before-define': 'off',
-    'guard-for-in': 'off',
-    'no-restricted-syntax': 'off',
-    'no-continue': 'off',
-    'prefer-template': 'off',
-    'newline-per-chained-call': 'off',
-    'linebreak-style': 'off',
-    'arrow-parens': 'off',
-    'no-unused-expressions': 'off',
-    'no-param-reassign': 'off',
-    'no-nested-ternary': 'off',
-    'one-var-declaration-per-line': 'off',
-    'one-var': 'off',
-    'prefer-destructuring': 'off',
-    'prefer-object-spread': 'off',
-    'import/extensions': 'off',
-    'import/prefer-default-export': 'off',
-    'max-classes-per-file': 'off'
+    'prettier/prettier': 'error',
+    '@typescript-eslint/no-unused-vars': 'warn',
+    '@typescript-eslint/explicit-function-return-type': 'off',
+    '@typescript-eslint/no-explicit-any': 'error',
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
+    '@typescript-eslint/no-var-requires': 'error',
+    '@typescript-eslint/consistent-type-imports': 'off',
+    'import/order': [
+      'error',
+      {
+        'groups': [
+          'builtin',
+          'external',
+          'internal',
+          ['parent', 'sibling', 'index'],
+        ],
+        'newlines-between': 'always',
+        'alphabetize': { order: 'asc', caseInsensitive: true },
+      },
+    ],
+    'import/newline-after-import': 'error',
+    'import/no-duplicates': 'error',
+    'import/no-named-as-default': 'off',
+    'import/no-named-as-default-member': 'off',
+    'import/no-unresolved': 'off',
+    'no-debugger': 'warn',
+    'no-var': 'error',
+    'prefer-const': 'error',
+    'prefer-arrow-callback': 'error',
+    'eqeqeq': ['error', 'always'],
+    'curly': 'error',
+    'quotes': ['error', 'single', { avoidEscape: true }],
+    'semi': ['error', 'always'],
+    'comma-dangle': ['error', 'always-multiline'],
+    'no-trailing-spaces': 'error',
+    'eol-last': ['error', 'always'],
   },
-  env: {
-    node: true,
-    mocha: true
-  }
-}
+  ignorePatterns: [
+    'node_modules/',
+    'dist/',
+    'tests/',
+    '.eslintrc.js',
+    'jest.config.ts',
+  ],
+};

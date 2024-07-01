@@ -3,19 +3,10 @@
  * filter execution. It stores all default operators, custom operators and
  * functions which directly touch these operators.
  */
-import {
-  Model,
-  QueryBuilder,
-  PrimitiveValue,
-  ref,
-  ReferenceBuilder
-} from 'objection';
-import * as _ from 'lodash';
+import _ from 'lodash';
+import { Model, QueryBuilder, PrimitiveValue } from 'objection';
 
-import { debug } from '../config';
 import { iterateLogicalExpression, hasSubExpression } from './LogicalIterator';
-
-// Types
 import {
   Relation,
   Operators,
@@ -25,8 +16,8 @@ import {
   LogicalIteratorLiteralFunction,
   Expression,
   ExpressionValue,
-  Primitive,
-  OperationHandler
+  OperationHandler,
+  ExpressionObject,
 } from './types';
 
 /**
@@ -39,17 +30,18 @@ export function sliceRelation(
   relatedProperty: string,
   delimiter = '.',
   rootTableName?: string,
-  fieldExpressionDelimiter = '$'
+  fieldExpressionDelimiter = '$',
 ): Relation {
   let jsonProperty;
   [relatedProperty, jsonProperty] = relatedProperty.split(
-    fieldExpressionDelimiter
+    fieldExpressionDelimiter,
   );
 
   const split = relatedProperty.split('.');
   let propertyName = split[split.length - 1];
-  if (jsonProperty)
+  if (jsonProperty) {
     propertyName += `${fieldExpressionDelimiter}${jsonProperty}`;
+  }
   const relationName = split.slice(0, split.length - 1).join(delimiter);
 
   // Nested relations need to be in the format a:b:c.name
@@ -57,10 +49,31 @@ export function sliceRelation(
   const fullyQualifiedProperty = relationName
     ? `${relationName.replace(/\./g, ':')}.${propertyName}`
     : rootTableName
-    ? `${rootTableName}.${propertyName}`
-    : propertyName;
+      ? `${rootTableName}.${propertyName}`
+      : propertyName;
 
   return { propertyName, relationName, fullyQualifiedProperty };
+}
+function convertString(input: string) {
+  const parts = input.split(/(->>|->|\(|\))/);
+
+  parts[0] = parts[0]
+    .split('.')
+    .map((part) => `"${part}"`)
+    .join('.');
+
+  for (let i = 1; i < parts.length; i++) {
+    if (
+      parts[i] !== '->' &&
+      parts[i] !== '->>' &&
+      parts[i] !== '(' &&
+      parts[i] !== ')'
+    ) {
+      parts[i] = `'${parts[i]}'`;
+    }
+  }
+
+  return parts.join('');
 }
 
 /**
@@ -70,83 +83,143 @@ export function sliceRelation(
  * @param {Function} options.onAggBuild A utility function to filter aggregations per model
  */
 export function Operations<M extends Model>(
-  options: OperationOptions<M>
+  options: OperationOptions<M>,
 ): OperationUtils<M> {
   const defaultOperators: Operators<M> = {
-    $like: (property, operand, builder) =>
-      builder.where(property, 'like', operand as string),
-    $lt: (property, operand, builder) =>
-      builder.where(property, '<', operand as number),
-    $gt: (property, operand, builder) =>
-      builder.where(property, '>', operand as number),
-    $lte: (property, operand, builder) =>
-      builder.where(property, '<=', operand as number),
-    $gte: (property, operand, builder) =>
-      builder.where(property, '>=', operand as number),
-    $equals: (property, operand, builder) =>
-      builder.where(property, operand as PrimitiveValue),
-    '=': (property, operand, builder) =>
-      builder.where(property, operand as PrimitiveValue),
-    $in: (property, operand, builder) =>
-      builder
-        // HACK: Use an unknown cast temporarily
-        .whereIn(property, (operand as unknown) as QueryBuilder<M>),
-    $exists: (property, operand, builder) =>
-      operand ? builder.whereNotNull(property) : builder.whereNull(property),
+    'like': (property, operand, builder, isJSON = false) => {
+      if (isJSON) {
+        return builder.whereRaw(`${property} like '%${operand as string}%'`);
+      }
+      builder.where(property, 'like', `%${operand}%` as string);
+    },
+    'lt': (property, operand, builder, isJSON = false) => {
+      if (isJSON) {
+        return builder.whereRaw(`${property} < ${operand as number}`);
+      }
+      return builder.where(property, '<', operand as number);
+    },
+    'gt': (property, operand, builder, isJSON = false) => {
+      if (isJSON) {
+        return builder.whereRaw(`${property} > ${operand as number}`);
+      }
+      return builder.where(property, '>', operand as number);
+    },
+    'lte': (property, operand, builder, isJSON = false) => {
+      if (isJSON) {
+        return builder.whereRaw(`${property} <= ${operand as number}`);
+      }
+      return builder.where(property, '<=', operand as number);
+    },
+    'gte': (property, operand, builder, isJSON = false) => {
+      if (isJSON) {
+        return builder.whereRaw(`${property} >= ${operand as number}`);
+      }
+      return builder.where(property, '>=', operand as number);
+    },
+    'equals': (property, operand, builder, isJSON = false) => {
+      if (isJSON) {
+        return builder.whereRaw(
+          `${property} = ${typeof operand === 'string' ? `'${operand}'` : operand}`,
+        );
+      }
+      return builder.where(property, operand as PrimitiveValue);
+    },
+    '=': (property, operand, builder, isJSON = false) => {
+      if (isJSON) {
+        return builder.whereRaw(
+          `${property} = ${typeof operand === 'string' ? `'${operand}'` : operand}`,
+        );
+      }
+      return builder.where(property, operand as PrimitiveValue);
+    },
+    'in': (property, operand, builder, isJSON = false) => {
+      if (isJSON) {
+        if (_.isArray(operand)) {
+          operand = operand
+            .map((value) => {
+              if (typeof value === 'string') {
+                return `'${value}'`;
+              }
+              return value;
+            })
+            .join(',');
+        }
+
+        return builder.whereRaw(`${property} IN (${operand})`);
+      }
+
+      return (
+        builder
+          // HACK: Use an unknown cast temporarily
+          .whereIn(property, operand as unknown as QueryBuilder<M>)
+      );
+    },
+    'exists': (property, operand, builder, isJSON = false) => {
+      if (isJSON) {
+        return builder.whereRaw(
+          `${property} ${operand ? 'IS NOT NULL' : 'IS NULL'}`,
+        );
+      }
+      return operand
+        ? builder.whereNotNull(property)
+        : builder.whereNull(property);
+    },
     /**
      * @param {String} property
      * @param {Array} items Must be an array of objects/values
      * @param {QueryBuilder} builder
      */
-    $or: (property, items, builder) => {
+    'or': (property, items, builder) => {
       const onExit: LogicalIteratorExitFunction<M> = function (
         operator,
         value,
-        subQueryBuilder
+        subQueryBuilder,
       ) {
-        const operationHandler = getOperationHandler(operator);
-        operationHandler(property, value, subQueryBuilder);
+        const operationHandler = getOperationHandler(operator as string);
+        operationHandler &&
+          operationHandler(property, value as Expression, subQueryBuilder);
       };
       const onLiteral: LogicalIteratorLiteralFunction<M> = function (
         value,
-        subQueryBuilder
+        subQueryBuilder,
       ) {
-        onExit('$equals', value, subQueryBuilder);
+        onExit('equals', value, subQueryBuilder);
       };
 
-      // Iterate the logical expression until it hits an operation e.g. $gte
+      // Iterate the logical expression until it hits an operation e.g. gte
       const iterateLogical = iterateLogicalExpression<M>({ onExit, onLiteral });
 
       // Wrap within another builder context to prevent end-of-expression errors
       // TODO: Investigate the consequences of not using this wrapper
       return builder.where((subQueryBuilder) => {
-        iterateLogical({ $or: items }, subQueryBuilder, true);
+        iterateLogical({ or: items }, subQueryBuilder, true);
       });
     },
-    $and: (property, items, builder) => {
+    'and': (property, items, builder) => {
       const onExit: LogicalIteratorExitFunction<M> = function (
         operator,
         value,
-        subQueryBuilder
+        subQueryBuilder,
       ) {
-        const operationHandler = getOperationHandler(operator);
-        operationHandler(property, value, subQueryBuilder);
+        const operationHandler = getOperationHandler(operator as string);
+        operationHandler &&
+          operationHandler(property, value as Expression, subQueryBuilder);
       };
       const onLiteral: LogicalIteratorLiteralFunction<M> = function (
         value,
-        subQueryBuilder
+        subQueryBuilder,
       ) {
-        onExit('$equals', value, subQueryBuilder);
+        onExit('equals', value, subQueryBuilder);
       };
 
-      // Iterate the logical expression until it hits an operation e.g. $gte
+      // Iterate the logical expression until it hits an operation e.g. gte
       const iterateLogical = iterateLogicalExpression<M>({ onExit, onLiteral });
 
       // Wrap within another builder context to prevent end-of-expression errors
       return builder.where((subQueryBuilder) => {
-        iterateLogical({ $and: items }, subQueryBuilder, false);
+        iterateLogical({ and: items }, subQueryBuilder, false);
       });
-    }
+    },
   };
   const { operators, onAggBuild } = options;
 
@@ -154,7 +227,9 @@ export function Operations<M extends Model>(
   const allOperators = { ...defaultOperators, ...operators };
 
   // TODO: Generalize
-  function isPrimitive(expression: ExpressionValue): expression is Primitive {
+  function isPrimitive(
+    expression: ExpressionValue,
+  ) /*: expression is Primitive*/ {
     return typeof expression !== 'object';
   }
 
@@ -162,23 +237,35 @@ export function Operations<M extends Model>(
    * Returns the operationHandler by name. Builds a reference to the property if necessary.
    * @param operator name of the operator
    */
-  function getOperationHandler(operator: any): OperationHandler<M> {
+  function getOperationHandler(
+    operator: string,
+  ): OperationHandler<M> | undefined {
     const operationHandler = allOperators[operator];
-    if (!operationHandler) return null;
+
+    if (!operationHandler) {
+      return undefined;
+    }
 
     if (hasSubExpression(operator)) {
       return operationHandler;
+    } else {
+      return (property, operand, builder) => {
+        if (property.includes('->') || property.includes('->>')) {
+          property = convertString(property);
+
+          if (
+            typeof operand === 'number' ||
+            (_.isArray(operand) && _.every(operand, _.isNumber))
+          ) {
+            property = `(${property})::integer`;
+          }
+
+          return operationHandler(property, operand, builder, true);
+        }
+
+        return operationHandler(property, operand, builder);
+      };
     }
-
-    return (property, operand, builder) => {
-      if (typeof property === 'string' && isFieldExpression(property)) {
-        let propertyRef = getFieldExpressionRef(property);
-        propertyRef = castTo(propertyRef, operand);
-        return operationHandler(propertyRef, operand, builder);
-      }
-
-      return operationHandler(property, operand, builder);
-    };
   }
 
   /**
@@ -190,24 +277,23 @@ export function Operations<M extends Model>(
   const applyPropertyExpression = function (
     propertyName: string,
     expression: Expression,
-    builder: QueryBuilder<M>
+    builder: QueryBuilder<M>,
   ) {
-    debug(
-      `Handling property[${propertyName}] expression[${JSON.stringify(
-        expression
-      )}]`
-    );
-
     // If the rhs is a primitive, assume equality
-    if (isPrimitive(expression))
-      return getOperationHandler('$equals')(propertyName, expression, builder);
+    if (isPrimitive(expression)) {
+      const operationHandler = getOperationHandler('equals');
+      if (!operationHandler) {
+        return;
+      }
 
-    for (const lhs in expression) {
-      const rhs = expression[lhs];
+      return operationHandler(propertyName, expression, builder);
+    }
+
+    for (const lhs in expression as ExpressionObject) {
+      const rhs = (expression as ExpressionObject)[lhs];
       const operationHandler = getOperationHandler(lhs);
 
       if (!operationHandler) {
-        debug(`The operator [${lhs}] does not exist, skipping`);
         continue;
       }
 
@@ -216,53 +302,4 @@ export function Operations<M extends Model>(
   };
 
   return { applyPropertyExpression, onAggBuild };
-}
-
-/**
- * Determines if a property is a [FieldExpression](https://vincit.github.io/objection.js/api/types/#type-fieldexpression)
- * @param property The property to check
- */
-export function isFieldExpression(property: string): boolean {
-  return property.indexOf('$') > -1;
-}
-
-/**
- * Builds a reference for a FieldExpression with support for fully-qualified properties
- * @param property a FieldExpression string
- */
-export function getFieldExpressionRef(property: string): ReferenceBuilder {
-  const isFullyQualified = property.indexOf(':') > -1;
-  if (isFullyQualified) {
-    let { propertyName, relationName } = sliceRelation(property, ':');
-    relationName = relationName.replace('.', ':');
-    propertyName = propertyName.replace('$', ':');
-    return (ref(propertyName) as any).from(relationName);
-  }
-
-  const propertyName = property.replace('$', ':');
-  return ref(propertyName);
-}
-
-/**
- * Casts a ReferenceBuilder instance to a type based on the type of the operand
- * @param reference A reference built from a filterExpression
- * @param operand the operand from which to infer the type
- */
-export function castTo(
-  reference: ReferenceBuilder,
-  operand: Expression
-): ReferenceBuilder {
-  const type = typeof operand;
-  if (type === 'string') {
-    return reference.castText();
-  }
-  if (type === 'boolean') {
-    return reference.castBool();
-  }
-  if (type === 'number') {
-    return reference.castDecimal();
-  }
-
-  // Don't cast by default
-  return reference;
 }

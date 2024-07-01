@@ -5,7 +5,7 @@ const { buildFilter } = require('../dist');
 
 describe('Custom Operators', function () {
   _.each(testUtils.testDatabaseConfigs, function (knexConfig) {
-    describe(knexConfig.client, function() {
+    describe(knexConfig.client, function () {
       let session, Person;
 
       before(function () {
@@ -48,23 +48,26 @@ describe('Custom Operators', function () {
        * F09 L00 | F08 L01 | P90 - P99 | M09 - M00
        */
       before(function () {
-        return testUtils.insertData(session, { persons: 10, pets: 10, movies: 10 });
+        return testUtils.insertData(session, {
+          persons: 10,
+          pets: 10,
+          movies: 10,
+        });
       });
 
       it('should create a custom operator', async () => {
         const options = {
           operators: {
-            $inCustom: (property, operand, builder) => {
+            inCustom: (property, operand, builder) => {
               builder.where(property, 'in', ['F00']);
-            }
-          }
+            },
+          },
         };
-        const result = await buildFilter(Person, null, options)
-          .build({
-            where: {
-              firstName: { $inCustom: null }
-            }
-          });
+        const result = await buildFilter(Person, null, options).build({
+          where: {
+            firstName: { inCustom: null },
+          },
+        });
         result.should.be.an.an('array');
         result.should.have.length(1);
         result[0].firstName.should.equal('F00');
@@ -73,20 +76,19 @@ describe('Custom Operators', function () {
       it('should work with lower() function', async () => {
         const options = {
           operators: {
-            $equalsLower: (property, operand, builder) => {
+            equalsLower: (property, operand, builder) => {
               builder.whereRaw('LOWER(??) = ?', [
                 property,
-                operand.toLowerCase()
+                operand.toLowerCase(),
               ]);
-            }
-          }
+            },
+          },
         };
-        const result = await buildFilter(Person, null, options)
-          .build({
-            where: {
-              firstName: { $equalsLower: 'f00' }
-            }
-          });
+        const result = await buildFilter(Person, null, options).build({
+          where: {
+            firstName: { equalsLower: 'f00' },
+          },
+        });
         result.should.be.an.an('array');
         result.should.have.length(1);
         result[0].firstName.should.equal('F00');
@@ -95,17 +97,16 @@ describe('Custom Operators', function () {
       it('should override existing operator', async () => {
         const options = {
           operators: {
-            $in: (property, operand, builder) => {
+            in: (property, operand, builder) => {
               builder.where(property, '=', 'F00');
-            }
-          }
+            },
+          },
         };
-        const result = await buildFilter(Person, null, options)
-          .build({
-            where: {
-              firstName: { $in: 'F00' }
-            }
-          });
+        const result = await buildFilter(Person, null, options).build({
+          where: {
+            firstName: { in: 'F00' },
+          },
+        });
         result.should.be.an.an('array');
         result.should.have.length(1);
         result[0].firstName.should.equal('F00');
@@ -114,18 +115,17 @@ describe('Custom Operators', function () {
       it('should work alongside default operators', async () => {
         const options = {
           operators: {
-            $inCustom: (property, operand, builder) => {
+            inCustom: (property, operand, builder) => {
               builder.where(property, 'in', ['F00']);
-            }
-          }
+            },
+          },
         };
-        const result = await buildFilter(Person, null, options)
-          .build({
-            where: {
-              firstName: { $inCustom: 'F00' },
-              lastName: { $equals: 'L09' }
-            }
-          });
+        const result = await buildFilter(Person, null, options).build({
+          where: {
+            firstName: { inCustom: 'F00' },
+            lastName: { equals: 'L09' },
+          },
+        });
         result.should.be.an.an('array');
         result.should.have.length(1);
         result[0].firstName.should.equal('F00');

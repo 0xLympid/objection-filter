@@ -22,7 +22,11 @@ describe('count queries', function () {
       });
 
       before(function () {
-        return testUtils.insertData(session, { persons: 10, pets: 10, movies: 10 });
+        return testUtils.insertData(session, {
+          persons: 10,
+          pets: 10,
+          movies: 10,
+        });
       });
 
       beforeEach(() => {
@@ -44,7 +48,9 @@ describe('count queries', function () {
       });
 
       it('should count with a where clause', async () => {
-        const result = await builder.build({ where: { firstName: { $in: ['F00', 'F01'] } } });
+        const result = await builder.build({
+          where: { firstName: { in: ['F00', 'F01'] } },
+        });
         const count = await builder.count();
         result.length.should.equal(2);
         count.should.equal(2);
@@ -53,8 +59,8 @@ describe('count queries', function () {
       it('should count with a require clause', async () => {
         const result = await builder.build({
           require: {
-            'movies.name': { $in: ['M09'] }
-          }
+            'movies.name': { in: ['M09'] },
+          },
         });
         const count = await builder.count();
         result.length.should.equal(1);
@@ -63,8 +69,8 @@ describe('count queries', function () {
 
       it('should count with a where clause and limit', async () => {
         const result = await builder.build({
-          where: { firstName: { $in: ['F00', 'F01', 'F02'] } },
-          limit: 1
+          where: { firstName: { in: ['F00', 'F01', 'F02'] } },
+          limit: 1,
         });
         const count = await builder.count();
         result.length.should.equal(1);
@@ -74,9 +80,9 @@ describe('count queries', function () {
       it('should count with a require clause and limit', async () => {
         const result = await builder.build({
           require: {
-            'movies.name': { $in: ['M00', 'M10'] }
+            'movies.name': { in: ['M00', 'M10'] },
           },
-          limit: 1
+          limit: 1,
         });
         const count = await builder.count();
         result.length.should.equal(1);
@@ -90,15 +96,15 @@ describe('count queries', function () {
         count.should.equal(10);
       });
 
-      it('should count with an eager.$where and limit', async () => {
+      it('should count with an eager.where and limit', async () => {
         const result = await builder.build({
           limit: 1,
           eager: {
-            $where: {
-              'movies.name': { $in: ['M00', 'M10'] }
+            where: {
+              'movies.name': { in: ['M00', 'M10'] },
             },
-            movies: true
-          }
+            movies: true,
+          },
         });
         const count = await builder.count();
         result.length.should.equal(1);

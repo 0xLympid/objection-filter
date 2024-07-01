@@ -1,8 +1,6 @@
 import { isArray, toPairs, uniq } from 'lodash';
 import { Model, QueryBuilder } from 'objection';
-import { debug } from '../config';
 
-// Types
 import {
   Expression,
   ExpressionValue,
@@ -10,16 +8,19 @@ import {
   ExpressionObject,
   LogicalExpressionIteratorOptions,
   StringFormatter,
-  LogicalIterator
+  LogicalIterator,
+  Primitive,
 } from './types';
 
-const OR = '$or';
-const AND = '$and';
+// Types
+
+const OR = 'or';
+const AND = 'and';
 
 // Typescript type predicate check during runtime
 // https://stackoverflow.com/questions/12789231/class-type-check-in-typescript
 function _isArray<T>(
-  objectOrArray: Record<string, unknown> | T[]
+  objectOrArray: Record<string, unknown> | T[],
 ): objectOrArray is T[] {
   return isArray(objectOrArray);
 }
@@ -32,9 +33,11 @@ function _isArray<T>(
  * @returns {Array<Object>}
  */
 function arrayize<T extends Expression>(
-  objectOrArray: Record<string, unknown> | T[]
+  objectOrArray: Record<string, unknown> | T[],
 ): T[] {
-  if (_isArray(objectOrArray)) return objectOrArray;
+  if (_isArray(objectOrArray)) {
+    return objectOrArray;
+  }
   const tuples = toPairs(objectOrArray);
   const objectArray = tuples.map((item) => ({ [item[0]]: item[1] }));
   return objectArray as T[];
@@ -44,7 +47,7 @@ function arrayize<T extends Expression>(
 export function hasSubExpression(
   lhs: string,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  rhs?: ExpressionValue
+  rhs?: ExpressionValue,
 ): rhs is ExpressionObject {
   return [OR, AND].includes(lhs);
 }
@@ -56,21 +59,25 @@ export function hasSubExpression(
  */
 export function getPropertiesFromExpression(
   expression: Expression,
-  test: PropertyOmissionPredicate = () => true
+  test: PropertyOmissionPredicate = () => true,
 ): string[] {
   let properties: string[] = [];
 
-  for (const lhs in expression as ExpressionObject) {
-    const rhs = expression[lhs];
+  let lhs: string;
+
+  for (lhs in expression as ExpressionObject) {
+    const rhs = (expression as ExpressionObject)[lhs];
 
     if (hasSubExpression(lhs, rhs)) {
       for (const subExpression of arrayize(rhs)) {
         properties = properties.concat(
-          getPropertiesFromExpression(subExpression, test)
+          getPropertiesFromExpression(subExpression, test),
         );
       }
     } else {
-      if (test(lhs)) properties.push(lhs);
+      if (test(lhs)) {
+        properties.push(lhs);
+      }
       continue;
     }
   }
@@ -79,25 +86,25 @@ export function getPropertiesFromExpression(
 }
 
 /**
- * Returns a function which iterates an object composed of $or/$and operators
- * Values of $or/$and operators can be either objects or arrays
- * e.g. { $or: [...] }, { $or: { ... } }
- * If the input to the iterator is a primitive, e.g. { $or: [1,2,3] }
+ * Returns a function which iterates an object composed of or/and operators
+ * Values of or/and operators can be either objects or arrays
+ * e.g. { or: [...] }, { or: { ... } }
+ * If the input to the iterator is a primitive, e.g. { or: [1,2,3] }
  * then the onLiteral callback will be called with (1), (2) and (3)
- * If the input is a non-logical operator e.g. { $or: [ { count: 5 } ] }
+ * If the input is a non-logical operator e.g. { or: [ { count: 5 } ] }
  * then the onExit callback will be called with ('count', 5)
  *
  * Valid logical expressions include:
- * { $gt: 1, $lt: 5 } - A non-logical expression, will be iterated (n=2) and
+ * { gt: 1, lt: 5 } - A non-logical expression, will be iterated (n=2) and
  *                      onExit called twice, once per operator/operand
- * { $or: [ ... ] } - An $or with an array of items (e.g. above)
- * { $or: { a: 1, b: 2 } } - An object,  will be 'arrayized' into an array
+ * { or: [ ... ] } - An or with an array of items (e.g. above)
+ * { or: { a: 1, b: 2 } } - An object,  will be 'arrayized' into an array
  * @param {Function} onExit A function to call once a non-logical operator is hit
  * @param {Function} onLiteral A function to call if the provided input is a primitive
  */
 export function iterateLogicalExpression<M extends Model>({
   onExit, // onExit(propertyOrOperator, value, builder)
-  onLiteral // onLiteral(value, builder)
+  onLiteral, // onLiteral(value, builder)
 }: LogicalExpressionIteratorOptions<M>): LogicalIterator {
   /**
    *
@@ -110,10 +117,8 @@ export function iterateLogicalExpression<M extends Model>({
     expression: Expression,
     builder: QueryBuilder<M>,
     or = false,
-    propertyTransform: StringFormatter = (p) => p
+    propertyTransform: StringFormatter = (p) => p,
   ) {
-    debug('Iterating through', expression);
-
     builder[or ? 'orWhere' : 'where']((subQueryBuilder) => {
       // Assume equality if the target expression is a primitive
       if (typeof expression !== 'object') {
@@ -121,8 +126,7 @@ export function iterateLogicalExpression<M extends Model>({
       }
 
       for (const lhs in expression as ExpressionObject) {
-        const rhs = expression[lhs];
-        debug(`Handling lhs[${lhs}] rhs[${JSON.stringify(rhs)}]`);
+        const rhs = (expression as ExpressionObject)[lhs];
 
         if (hasSubExpression(lhs, rhs)) {
           // Wrap nested conditions in their own scope
@@ -132,14 +136,13 @@ export function iterateLogicalExpression<M extends Model>({
                 subExpression,
                 innerBuilder,
                 lhs === OR,
-                propertyTransform
+                propertyTransform,
               );
             }
           });
         } else {
           // The lhs is either a non-logical operator or a property name
-          debug('onExit', propertyTransform(lhs), rhs);
-          onExit(propertyTransform(lhs), rhs, subQueryBuilder);
+          onExit(propertyTransform(lhs), rhs as Primitive, subQueryBuilder);
         }
       }
     });
