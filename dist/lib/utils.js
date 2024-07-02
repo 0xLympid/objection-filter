@@ -1,19 +1,10 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sliceRelation = sliceRelation;
 exports.Operations = Operations;
 exports.isFieldExpression = isFieldExpression;
 exports.getFieldExpressionRef = getFieldExpressionRef;
 exports.castTo = castTo;
-/**
- * The utils helpers are a set of common helpers to be passed around during
- * filter execution. It stores all default operators, custom operators and
- * functions which directly touch these operators.
- */
-const lodash_1 = __importDefault(require("lodash"));
 const objection_1 = require("objection");
 const LogicalIterator_1 = require("./LogicalIterator");
 /**
@@ -40,22 +31,6 @@ function sliceRelation(relatedProperty, delimiter = '.', rootTableName, fieldExp
             : propertyName;
     return { propertyName, relationName, fullyQualifiedProperty };
 }
-function convertString(input) {
-    const parts = input.split(/(->>|->|\(|\))/);
-    parts[0] = parts[0]
-        .split('.')
-        .map((part) => `"${part}"`)
-        .join('.');
-    for (let i = 1; i < parts.length; i++) {
-        if (parts[i] !== '->' &&
-            parts[i] !== '->>' &&
-            parts[i] !== '(' &&
-            parts[i] !== ')') {
-            parts[i] = `'${parts[i]}'`;
-        }
-    }
-    return parts.join('');
-}
 /**
  * Create operation application utilities with some custom options
  * If options.operators is specified
@@ -64,70 +39,33 @@ function convertString(input) {
  */
 function Operations(options) {
     const defaultOperators = {
-        'like': (property, operand, builder, isJSON = false) => {
-            if (isJSON) {
-                return builder.whereRaw(`${property} like '%${operand}%'`);
-            }
-            builder.where(property, 'like', `%${operand}%`);
+        'like': (property, operand, builder) => {
+            return builder.where(property, 'like', `%${operand}%`);
         },
-        'lt': (property, operand, builder, isJSON = false) => {
-            if (isJSON) {
-                return builder.whereRaw(`${property} < ${operand}`);
-            }
+        'lt': (property, operand, builder) => {
             return builder.where(property, '<', operand);
         },
-        'gt': (property, operand, builder, isJSON = false) => {
-            if (isJSON) {
-                return builder.whereRaw(`${property} > ${operand}`);
-            }
+        'gt': (property, operand, builder) => {
             return builder.where(property, '>', operand);
         },
-        'lte': (property, operand, builder, isJSON = false) => {
-            if (isJSON) {
-                return builder.whereRaw(`${property} <= ${operand}`);
-            }
+        'lte': (property, operand, builder) => {
             return builder.where(property, '<=', operand);
         },
-        'gte': (property, operand, builder, isJSON = false) => {
-            if (isJSON) {
-                return builder.whereRaw(`${property} >= ${operand}`);
-            }
+        'gte': (property, operand, builder) => {
             return builder.where(property, '>=', operand);
         },
-        'equals': (property, operand, builder, isJSON = false) => {
-            if (isJSON) {
-                return builder.whereRaw(`${property} = ${typeof operand === 'string' ? `'${operand}'` : operand}`);
-            }
+        'equals': (property, operand, builder) => {
             return builder.where(property, operand);
         },
-        '=': (property, operand, builder, isJSON = false) => {
-            if (isJSON) {
-                return builder.whereRaw(`${property} = ${typeof operand === 'string' ? `'${operand}'` : operand}`);
-            }
+        '=': (property, operand, builder) => {
             return builder.where(property, operand);
         },
-        'in': (property, operand, builder, isJSON = false) => {
-            if (isJSON) {
-                if (lodash_1.default.isArray(operand)) {
-                    operand = operand
-                        .map((value) => {
-                        if (typeof value === 'string') {
-                            return `'${value}'`;
-                        }
-                        return value;
-                    })
-                        .join(',');
-                }
-                return builder.whereRaw(`${property} IN (${operand})`);
-            }
+        'in': (property, operand, builder) => {
             return (builder
                 // HACK: Use an unknown cast temporarily
                 .whereIn(property, operand));
         },
-        'exists': (property, operand, builder, isJSON = false) => {
-            if (isJSON) {
-                return builder.whereRaw(`${property} ${operand ? 'IS NOT NULL' : 'IS NULL'}`);
-            }
+        'exists': (property, operand, builder) => {
             return operand
                 ? builder.whereNotNull(property)
                 : builder.whereNull(property);
@@ -192,16 +130,6 @@ function Operations(options) {
         }
         else {
             return (property, operand, builder) => {
-                // if (property.includes('->') || property.includes('->>')) {
-                //   property = convertString(property);
-                //   if (
-                //     typeof operand === 'number' ||
-                //     (_.isArray(operand) && _.every(operand, _.isNumber))
-                //   ) {
-                //     property = `(${property})::integer`;
-                //   }
-                //   return operationHandler(property, operand, builder, true);
-                // }
                 if (typeof property === 'string' && isFieldExpression(property)) {
                     let propertyRef = getFieldExpressionRef(property);
                     propertyRef = castTo(propertyRef, operand);
@@ -242,7 +170,7 @@ function Operations(options) {
  * @param property The property to check
  */
 function isFieldExpression(property) {
-    return property.indexOf('->') > -1;
+    return property.indexOf('$') > -1;
 }
 /**
  * Builds a reference for a FieldExpression with support for fully-qualified properties
@@ -251,15 +179,12 @@ function isFieldExpression(property) {
 function getFieldExpressionRef(property) {
     const isFullyQualified = property.indexOf(':') > -1;
     if (isFullyQualified) {
-        console.log('property', property);
         let { propertyName, relationName } = sliceRelation(property, ':');
-        console.log('propertyName, relationName', propertyName, relationName);
         relationName = relationName.replace('.', ':');
-        propertyName = propertyName.replace('->', ':');
+        propertyName = propertyName.replace('$', ':');
         return (0, objection_1.ref)(propertyName).from(relationName);
     }
-    const propertyName = property.replace('->', ':');
-    console.log('PROPERTY NAME', propertyName);
+    const propertyName = property.replace('$', ':');
     return (0, objection_1.ref)(propertyName);
 }
 /**

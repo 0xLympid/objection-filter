@@ -328,17 +328,23 @@ function applyOrder(order, builder) {
         const { propertyName, relationName } = (0, utils_1.sliceRelation)(orderProperty);
         // Use fieldExpressionRef to sort if necessary
         const orderBy = (queryBuilder, fullyQualifiedColumn) => {
-            queryBuilder.orderBy(fullyQualifiedColumn, direction);
+            if ((0, utils_1.isFieldExpression)(fullyQualifiedColumn)) {
+                const ref = (0, utils_1.getFieldExpressionRef)(fullyQualifiedColumn);
+                queryBuilder.orderBy(ref, direction);
+            }
+            else {
+                queryBuilder.orderBy(fullyQualifiedColumn, direction);
+            }
         };
         if (!relationName) {
             // Root level where should include the root table name
             const fullyQualifiedColumn = `${Model.tableName}.${propertyName}`;
             return orderBy(builder, fullyQualifiedColumn);
         }
-        // For now, only allow sub-query ordering of ea expressions
-        builder.modifyGraph(relationName, (eaBuilder) => {
-            const fullyQualifiedColumn = `${eaBuilder.modelClass().tableName}.${propertyName}`;
-            orderBy(eaBuilder, fullyQualifiedColumn);
+        // For now, only allow sub-query ordering of eager expressions
+        builder.modifyGraph(relationName, (eagerBuilder) => {
+            const fullyQualifiedColumn = `${eagerBuilder.modelClass().tableName}.${propertyName}`;
+            orderBy(eagerBuilder, fullyQualifiedColumn);
         });
     });
     return builder;

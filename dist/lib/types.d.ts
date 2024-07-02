@@ -8,7 +8,7 @@ export type Primitive = number | string | null;
 export interface BaseModel extends Model {
     count?: number;
 }
-export type OperationHandler<M extends Model> = (property: string | ReferenceBuilder, operand: Expression | ExpressionValue, builder: QueryBuilder<M>, isJSON?: boolean) => QueryBuilder<M> | undefined;
+export type OperationHandler<M extends Model> = (property: string | ReferenceBuilder, operand: Expression | ExpressionValue, builder: QueryBuilder<M>) => QueryBuilder<M> | undefined;
 export type Operators<M extends Model> = {
     [f: string]: OperationHandler<M>;
 };

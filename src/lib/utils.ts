@@ -60,27 +60,6 @@ export function sliceRelation(
 
   return { propertyName, relationName, fullyQualifiedProperty };
 }
-function convertString(input: string) {
-  const parts = input.split(/(->>|->|\(|\))/);
-
-  parts[0] = parts[0]
-    .split('.')
-    .map((part) => `"${part}"`)
-    .join('.');
-
-  for (let i = 1; i < parts.length; i++) {
-    if (
-      parts[i] !== '->' &&
-      parts[i] !== '->>' &&
-      parts[i] !== '(' &&
-      parts[i] !== ')'
-    ) {
-      parts[i] = `'${parts[i]}'`;
-    }
-  }
-
-  return parts.join('');
-}
 
 /**
  * Create operation application utilities with some custom options
@@ -263,7 +242,7 @@ export function Operations<M extends Model>(
  * @param property The property to check
  */
 export function isFieldExpression(property: string): boolean {
-  return property.indexOf('->') > -1;
+  return property.indexOf('$') > -1;
 }
 
 /**
@@ -273,17 +252,14 @@ export function isFieldExpression(property: string): boolean {
 export function getFieldExpressionRef(property: string): ReferenceBuilder {
   const isFullyQualified = property.indexOf(':') > -1;
   if (isFullyQualified) {
-    console.log('property', property);
     let { propertyName, relationName } = sliceRelation(property, ':');
-    console.log('propertyName, relationName', propertyName, relationName);
     relationName = relationName.replace('.', ':');
-    propertyName = propertyName.replace('->', ':');
+    propertyName = propertyName.replace('$', ':');
     return (ref(propertyName) as ReferenceBuilder).from(relationName);
   }
 
-  const propertyName = property.replace('->', ':');
+  const propertyName = property.replace('$', ':');
 
-  console.log('PROPERTY NAME', propertyName);
   return ref(propertyName);
 }
 

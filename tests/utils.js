@@ -9,40 +9,26 @@ const { raw } = require('objection');
 
 pg.types.setTypeParser(1700, 'text', parseFloat); // DECIMAL
 pg.types.setTypeParser(20, 'text', parseInt); // BIGINT
-const getNumber = s => parseInt(s.replace(/^\D*/, ''), 10);
+const getNumber = (s) => parseInt(s.replace(/^\D*/, ''), 10);
 
 module.exports = {
-  testDatabaseConfigs: [{
-    client: 'sqlite3',
-    connection: {
-      filename: path.join(os.tmpdir(), 'objection_find_test.db')
+  testDatabaseConfigs: [
+    {
+      client: 'postgres',
+      connection: {
+        host: process.env.DB_HOST || '127.0.0.1',
+        user: process.env.DB_USER || 'test',
+        password: process.env.DB_PASSWORD || 'test',
+        database: process.env.DB_NAME || 'lympid',
+        port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 5432,
+      },
+      useNullAsDefault: true,
+      pool: {
+        min: 0,
+        max: 10,
+      },
     },
-    useNullAsDefault: true
-  }, {
-    client: 'postgres',
-    connection: {
-      host: '127.0.0.1',
-      database: 'objection_filter_test',
-      user: 'postgres',
-      password: 'postgres'
-    },
-    pool: {
-      min: 0,
-      max: 10
-    }
-  }, {
-    client: 'mysql2',
-    connection: {
-      host: '127.0.0.1',
-      user: 'root',
-      database: 'objection_filter_test',
-      decimalNumbers: true
-    },
-    pool: {
-      min: 0,
-      max: 10
-    }
-  }],
+  ],
 
   NUMERIC_SORT: (a, b) => a - b,
   STRING_SORT: (a, b) => getNumber(a) - getNumber(b),
@@ -53,7 +39,7 @@ module.exports = {
     return {
       config: knexConfig,
       models: createModels(knex),
-      knex: knex
+      knex: knex,
     };
   },
 
@@ -88,7 +74,11 @@ module.exports = {
       })
       .createTable('Movie', function (table) {
         table.bigincrements('id').unsigned().primary();
-        table.biginteger('categoryId').unsigned().references('Category.id').index();
+        table
+          .biginteger('categoryId')
+          .unsigned()
+          .references('Category.id')
+          .index();
         table.string('name').index();
         table.string('code');
         table.integer('seq').index();
@@ -105,16 +95,19 @@ module.exports = {
       })
       .then(async function () {
         if (session.config.client === 'postgres') {
-
           // Add JSONB column to test FieldExpressions
-          await session.knex.schema.table('Movie', table => {
+          await session.knex.schema.table('Movie', (table) => {
             table.jsonb('metadata').notNullable().defaultsTo('{}');
-          })
+          });
 
           // Index to speed up wildcard searches.
           return Promise.all([
-            session.knex.raw('CREATE INDEX "movie_name_wildcard_index" ON "Movie" USING btree ("name" varchar_pattern_ops)'),
-            session.knex.raw('CREATE INDEX "animal_name_wildcard_index" ON "Animal" USING btree ("name" varchar_pattern_ops)')
+            session.knex.raw(
+              'CREATE INDEX "movie_name_wildcard_index" ON "Movie" USING btree ("name" varchar_pattern_ops)',
+            ),
+            session.knex.raw(
+              'CREATE INDEX "animal_name_wildcard_index" ON "Animal" USING btree ("name" varchar_pattern_ops)',
+            ),
           ]);
         }
       });
@@ -162,11 +155,11 @@ module.exports = {
         firstName: 'F' + zeroPad(p),
         lastName: 'L' + zeroPad(P - p - 1),
         age: p * 10,
-        nickName: p <= 4 ? null : ('N' + zeroPad(p)),
+        nickName: p <= 4 ? null : 'N' + zeroPad(p),
 
         category: {
           id: p + 1,
-          name: 'C' + zeroPad(p)
+          name: 'C' + zeroPad(p),
         },
 
         pets: _.times(A, function (a) {
@@ -180,10 +173,10 @@ module.exports = {
             id: id,
             categoryId: p + 1,
             name: 'M' + zeroPad(P * M - id),
-            code: p <= 4 ? null : ('C' + zeroPad(p)),
-            seq: Math.floor(Math.random() * 20)
+            code: p <= 4 ? null : 'C' + zeroPad(p),
+            seq: Math.floor(Math.random() * 20),
           };
-          if(session.config.client === 'postgres'){
+          if (session.config.client === 'postgres') {
             const booleanField = movie.categoryId % 2 === 0;
             movie.metadata = {
               stringField: movie.name,
@@ -192,11 +185,11 @@ module.exports = {
               objectField: {
                 stringField: movie.name,
                 numberField: movie.categoryId,
-                booleanField
+                booleanField,
               },
               arrayField: booleanField ? [1, 2, 3] : [3, 2, 1],
-              nullField: null
-            }
+              nullField: null,
+            };
           }
           return movie;
         }),
@@ -205,51 +198,97 @@ module.exports = {
           const id = p * M + m + 1;
           return {
             movieId: id,
-            version: 1
+            version: 1,
           };
         }),
 
         personMovies: _.times(M, function (m) {
           const id = p * M + m + 1;
           return { actorId: p + 1, movieId: id };
-        })
+        }),
       });
     });
 
-    return Promise.all(_.map(_.chunk(persons, C), function (personChunk) {
-      return session.knex('Person').insert(pick(personChunk, ['id', 'firstName', 'lastName', 'age', 'nickName']));
-    })).then(function() {
-      return Promise.all(_.map(_.chunk(persons, C), function (personChunk) {
-        return session.knex('Category').insert(
-          pick(personChunk, 'category').map(item => item.category)
+    return Promise.all(
+      _.map(_.chunk(persons, C), function (personChunk) {
+        return session
+          .knex('Person')
+          .insert(
+            pick(personChunk, [
+              'id',
+              'firstName',
+              'lastName',
+              'age',
+              'nickName',
+            ]),
+          );
+      }),
+    )
+      .then(function () {
+        return Promise.all(
+          _.map(_.chunk(persons, C), function (personChunk) {
+            return session
+              .knex('Category')
+              .insert(
+                pick(personChunk, 'category').map((item) => item.category),
+              );
+          }),
         );
-      }));
-    }).then(function () {
-      return session.knex('Person').update('pid', session.knex.raw('id - 1')).where('id', '>', 1);
-    }).then(function () {
-      progress('1/5');
-      return Promise.all(_.map(_.chunk(_.flatten(_.map(persons, 'pets')), C), function (animalChunk) {
-        return session.knex('Animal').insert(animalChunk);
-      }));
-    }).then(function () {
-      progress('2/5');
-      return Promise.all(_.map(_.chunk(_.flatten(_.map(persons, 'movies')), C), function (movieChunk) {
-        return session.knex('Movie').insert(movieChunk);
-      }));
-    }).then(function () {
-      progress('3/5');
-      return Promise.all(_.map(_.chunk(_.flatten(_.map(persons, 'personMovies')), C), function (movieChunk) {
-        return session.knex('Person_Movie').insert(movieChunk);
-      }));
-    }).then(function () {
-      progress('4/5');
-      return Promise.all(_.map(_.chunk(_.flatten(_.map(persons, 'movieVersions')), C), function (movieVersionChunk) {
-        return session.knex('Movie_Version').insert(movieVersionChunk);
-      }));
-    }).then(function () {
-      progress('5/5');
-    });
-  }
+      })
+      .then(function () {
+        return session
+          .knex('Person')
+          .update('pid', session.knex.raw('id - 1'))
+          .where('id', '>', 1);
+      })
+      .then(function () {
+        progress('1/5');
+        return Promise.all(
+          _.map(
+            _.chunk(_.flatten(_.map(persons, 'pets')), C),
+            function (animalChunk) {
+              return session.knex('Animal').insert(animalChunk);
+            },
+          ),
+        );
+      })
+      .then(function () {
+        progress('2/5');
+        return Promise.all(
+          _.map(
+            _.chunk(_.flatten(_.map(persons, 'movies')), C),
+            function (movieChunk) {
+              return session.knex('Movie').insert(movieChunk);
+            },
+          ),
+        );
+      })
+      .then(function () {
+        progress('3/5');
+        return Promise.all(
+          _.map(
+            _.chunk(_.flatten(_.map(persons, 'personMovies')), C),
+            function (movieChunk) {
+              return session.knex('Person_Movie').insert(movieChunk);
+            },
+          ),
+        );
+      })
+      .then(function () {
+        progress('4/5');
+        return Promise.all(
+          _.map(
+            _.chunk(_.flatten(_.map(persons, 'movieVersions')), C),
+            function (movieVersionChunk) {
+              return session.knex('Movie_Version').insert(movieVersionChunk);
+            },
+          ),
+        );
+      })
+      .then(function () {
+        progress('5/5');
+      });
+  },
 };
 
 function createModels(knex) {
@@ -262,11 +301,10 @@ function createModels(knex) {
       return {
         withBirthYear(builder) {
           const currentYear = new Date().getFullYear();
-          const personWithBirthYearQuery = Person.query().withGraphFetched("movies").select([
-            "Person.id", 
-            raw(`${currentYear} - age`).as("birthYear"),
-          ]);
-          builder.from(raw("(??)", personWithBirthYearQuery).as("Person"));
+          const personWithBirthYearQuery = Person.query()
+            .withGraphFetched('movies')
+            .select(['Person.id', raw(`${currentYear} - age`).as('birthYear')]);
+          builder.from(raw('(??)', personWithBirthYearQuery).as('Person'));
         },
       };
     }
@@ -278,8 +316,8 @@ function createModels(knex) {
           modelClass: Person,
           join: {
             from: 'Person.pid',
-            to: 'Person.id'
-          }
+            to: 'Person.id',
+          },
         },
 
         pets: {
@@ -287,8 +325,8 @@ function createModels(knex) {
           modelClass: Animal,
           join: {
             from: 'Person.id',
-            to: 'Animal.ownerId'
-          }
+            to: 'Animal.ownerId',
+          },
         },
 
         movies: {
@@ -298,17 +336,17 @@ function createModels(knex) {
             from: 'Person.id',
             through: {
               from: 'Person_Movie.actorId',
-              to: 'Person_Movie.movieId'
+              to: 'Person_Movie.movieId',
             },
-            to: 'Movie.id'
+            to: 'Movie.id',
           },
-          modify(qb){
+          modify(qb) {
             const { useFirstMovie } = qb.context();
-            if(useFirstMovie && useFirstMovie()){
+            if (useFirstMovie && useFirstMovie()) {
               qb.whereRaw('name LIKE ?', 'M_0');
             }
-          }
-        }
+          },
+        },
       };
     }
   }
@@ -325,9 +363,9 @@ function createModels(knex) {
           modelClass: Person,
           join: {
             from: 'Animal.ownerId',
-            to: 'Person.id'
-          }
-        }
+            to: 'Person.id',
+          },
+        },
       };
     }
   }
@@ -344,8 +382,8 @@ function createModels(knex) {
           modelClass: Category,
           join: {
             from: 'Movie.categoryId',
-            to: 'Category.id'
-          }
+            to: 'Category.id',
+          },
         },
 
         version: {
@@ -353,9 +391,9 @@ function createModels(knex) {
           modelClass: MovieVersion,
           join: {
             from: 'Movie.id',
-            to: 'Movie_Version.movieId'
-          }
-        }
+            to: 'Movie_Version.movieId',
+          },
+        },
       };
     }
   }
@@ -382,9 +420,9 @@ function createModels(knex) {
           modelClass: Movie,
           join: {
             from: 'Movie_Version.movieId',
-            to: 'Movie.id'
-          }
-        }
+            to: 'Movie.id',
+          },
+        },
       };
     }
   }
@@ -400,7 +438,7 @@ function createModels(knex) {
     Animal: Animal,
     Movie: Movie,
     Category: Category,
-    MovieVersion: MovieVersion
+    MovieVersion: MovieVersion,
   };
 }
 

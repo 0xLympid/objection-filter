@@ -44,7 +44,12 @@ import {
   ExpressionObject,
   Expression,
 } from './types';
-import { sliceRelation, Operations } from './utils';
+import {
+  sliceRelation,
+  Operations,
+  isFieldExpression,
+  getFieldExpressionRef,
+} from './utils';
 
 export default class FilterQueryBuilder<
   M extends BaseModel,
@@ -461,7 +466,12 @@ export function applyOrder<M extends BaseModel>(
       queryBuilder: QueryBuilder<ObjModel, ObjModel[]>,
       fullyQualifiedColumn: string,
     ) => {
-      queryBuilder.orderBy(fullyQualifiedColumn, direction);
+      if (isFieldExpression(fullyQualifiedColumn)) {
+        const ref = getFieldExpressionRef(fullyQualifiedColumn);
+        queryBuilder.orderBy(ref, direction);
+      } else {
+        queryBuilder.orderBy(fullyQualifiedColumn, direction);
+      }
     };
 
     if (!relationName) {
@@ -473,12 +483,12 @@ export function applyOrder<M extends BaseModel>(
       );
     }
 
-    // For now, only allow sub-query ordering of ea expressions
-    builder.modifyGraph(relationName, (eaBuilder) => {
+    // For now, only allow sub-query ordering of eager expressions
+    builder.modifyGraph(relationName, (eagerBuilder) => {
       const fullyQualifiedColumn = `${
-        eaBuilder.modelClass().tableName
+        eagerBuilder.modelClass().tableName
       }.${propertyName}`;
-      orderBy(eaBuilder, fullyQualifiedColumn);
+      orderBy(eagerBuilder, fullyQualifiedColumn);
     });
   });
 

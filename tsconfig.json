@@ -2,7 +2,7 @@
   "compilerOptions": {
     "outDir": "./dist",
     "allowJs": true,
-    "rootDir": ".",
+    "rootDir": "src",
     "baseUrl": ".",
     "module": "commonjs",
     "moduleResolution": "node",
