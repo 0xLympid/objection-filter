@@ -4,7 +4,13 @@
  * functions which directly touch these operators.
  */
 import _ from 'lodash';
-import { Model, QueryBuilder, PrimitiveValue } from 'objection';
+import {
+  Model,
+  QueryBuilder,
+  PrimitiveValue,
+  ref,
+  ReferenceBuilder,
+} from 'objection';
 
 import { iterateLogicalExpression, hasSubExpression } from './LogicalIterator';
 import {
@@ -86,80 +92,35 @@ export function Operations<M extends Model>(
   options: OperationOptions<M>,
 ): OperationUtils<M> {
   const defaultOperators: Operators<M> = {
-    'like': (property, operand, builder, isJSON = false) => {
-      if (isJSON) {
-        return builder.whereRaw(`${property} like '%${operand as string}%'`);
-      }
-      builder.where(property, 'like', `%${operand}%` as string);
+    'like': (property, operand, builder) => {
+      return builder.where(property, 'like', `%${operand}%` as string);
     },
-    'lt': (property, operand, builder, isJSON = false) => {
-      if (isJSON) {
-        return builder.whereRaw(`${property} < ${operand as number}`);
-      }
+    'lt': (property, operand, builder) => {
       return builder.where(property, '<', operand as number);
     },
-    'gt': (property, operand, builder, isJSON = false) => {
-      if (isJSON) {
-        return builder.whereRaw(`${property} > ${operand as number}`);
-      }
+    'gt': (property, operand, builder) => {
       return builder.where(property, '>', operand as number);
     },
-    'lte': (property, operand, builder, isJSON = false) => {
-      if (isJSON) {
-        return builder.whereRaw(`${property} <= ${operand as number}`);
-      }
+    'lte': (property, operand, builder) => {
       return builder.where(property, '<=', operand as number);
     },
-    'gte': (property, operand, builder, isJSON = false) => {
-      if (isJSON) {
-        return builder.whereRaw(`${property} >= ${operand as number}`);
-      }
+    'gte': (property, operand, builder) => {
       return builder.where(property, '>=', operand as number);
     },
-    'equals': (property, operand, builder, isJSON = false) => {
-      if (isJSON) {
-        return builder.whereRaw(
-          `${property} = ${typeof operand === 'string' ? `'${operand}'` : operand}`,
-        );
-      }
+    'equals': (property, operand, builder) => {
       return builder.where(property, operand as PrimitiveValue);
     },
-    '=': (property, operand, builder, isJSON = false) => {
-      if (isJSON) {
-        return builder.whereRaw(
-          `${property} = ${typeof operand === 'string' ? `'${operand}'` : operand}`,
-        );
-      }
+    '=': (property, operand, builder) => {
       return builder.where(property, operand as PrimitiveValue);
     },
-    'in': (property, operand, builder, isJSON = false) => {
-      if (isJSON) {
-        if (_.isArray(operand)) {
-          operand = operand
-            .map((value) => {
-              if (typeof value === 'string') {
-                return `'${value}'`;
-              }
-              return value;
-            })
-            .join(',');
-        }
-
-        return builder.whereRaw(`${property} IN (${operand})`);
-      }
-
+    'in': (property, operand, builder) => {
       return (
         builder
           // HACK: Use an unknown cast temporarily
           .whereIn(property, operand as unknown as QueryBuilder<M>)
       );
     },
-    'exists': (property, operand, builder, isJSON = false) => {
-      if (isJSON) {
-        return builder.whereRaw(
-          `${property} ${operand ? 'IS NOT NULL' : 'IS NULL'}`,
-        );
-      }
+    'exists': (property, operand, builder) => {
       return operand
         ? builder.whereNotNull(property)
         : builder.whereNull(property);
@@ -250,17 +211,10 @@ export function Operations<M extends Model>(
       return operationHandler;
     } else {
       return (property, operand, builder) => {
-        if (property.includes('->') || property.includes('->>')) {
-          property = convertString(property);
-
-          if (
-            typeof operand === 'number' ||
-            (_.isArray(operand) && _.every(operand, _.isNumber))
-          ) {
-            property = `(${property})::integer`;
-          }
-
-          return operationHandler(property, operand, builder, true);
+        if (typeof property === 'string' && isFieldExpression(property)) {
+          let propertyRef = getFieldExpressionRef(property);
+          propertyRef = castTo(propertyRef, operand);
+          return operationHandler(propertyRef, operand, builder);
         }
 
         return operationHandler(property, operand, builder);
@@ -275,7 +229,7 @@ export function Operations<M extends Model>(
    * @param {QueryBuilder} builder
    */
   const applyPropertyExpression = function (
-    propertyName: string,
+    propertyName: string | ReferenceBuilder,
     expression: Expression,
     builder: QueryBuilder<M>,
   ) {
@@ -302,4 +256,57 @@ export function Operations<M extends Model>(
   };
 
   return { applyPropertyExpression, onAggBuild };
+}
+
+/**
+ * Determines if a property is a [FieldExpression](https://vincit.github.io/objection.js/api/types/#type-fieldexpression)
+ * @param property The property to check
+ */
+export function isFieldExpression(property: string): boolean {
+  return property.indexOf('->') > -1;
+}
+
+/**
+ * Builds a reference for a FieldExpression with support for fully-qualified properties
+ * @param property a FieldExpression string
+ */
+export function getFieldExpressionRef(property: string): ReferenceBuilder {
+  const isFullyQualified = property.indexOf(':') > -1;
+  if (isFullyQualified) {
+    console.log('property', property);
+    let { propertyName, relationName } = sliceRelation(property, ':');
+    console.log('propertyName, relationName', propertyName, relationName);
+    relationName = relationName.replace('.', ':');
+    propertyName = propertyName.replace('->', ':');
+    return (ref(propertyName) as ReferenceBuilder).from(relationName);
+  }
+
+  const propertyName = property.replace('->', ':');
+
+  console.log('PROPERTY NAME', propertyName);
+  return ref(propertyName);
+}
+
+/**
+ * Casts a ReferenceBuilder instance to a type based on the type of the operand
+ * @param reference A reference built from a filterExpression
+ * @param operand the operand from which to infer the type
+ */
+export function castTo(
+  reference: ReferenceBuilder,
+  operand: Expression,
+): ReferenceBuilder {
+  const type = typeof operand;
+  if (type === 'string') {
+    return reference.castText();
+  }
+  if (type === 'boolean') {
+    return reference.castBool();
+  }
+  if (type === 'number') {
+    return reference.castDecimal();
+  }
+
+  // Don't cast by default
+  return reference;
 }

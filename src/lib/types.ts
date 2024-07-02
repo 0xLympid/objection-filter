@@ -15,10 +15,9 @@ export interface BaseModel extends Model {
 
 // OperationOptions types and subtypes
 export type OperationHandler<M extends Model> = (
-  property: string,
+  property: string | ReferenceBuilder,
   operand: Expression | ExpressionValue,
   builder: QueryBuilder<M>,
-  isJSON?: boolean,
 ) => QueryBuilder<M> | undefined;
 
 export type Operators<M extends Model> = {
