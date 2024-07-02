@@ -97,7 +97,7 @@ An example of operator usage
       "or": [{ "in": [1, 2, 3] }, { "equals": 100 }]
     },
     "property7": {
-      "jsonSearch->first->test->>prop": "test"
+      "jsonSearch&first.test.prop": "test"
     }
   }
 }
@@ -177,9 +177,13 @@ Note that in these examples, all logical expressions come _before_ the property 
 
 The `where` will apply to the relation that immediately precedes it in the tree, in the above case "city". The `where` will apply to relations of the model using dot notation. For example, you can query `Customers`, load their `orders` and filter those orders by the `product.name`. Note that `product.name` is a related field of the order model, not the customers model.
 
-#### JSON column search
+### JSONB column search
 
-You can search on JSON columns using `->` and `->>` operators. For example, if you have a JSON column `customData` with the following structure:
+-> **PostgreSQL ONLY**
+
+JSONB column filtering using the [FieldExpression](https://vincit.github.io/objection.js/api/types/#type-fieldexpression) syntax
+
+You can search on JSONB columns using `$` operator. For example, if you have a JSONB column `customData` with the following structure:
 
 ```json
 {
@@ -195,9 +199,9 @@ You can search on the `network` field like this:
 
 ```json
 {
-    "where": {
-        "customData->>network": "btc",
-    }
+  "where": {
+    "customData$network": "btc"
+  }
 }
 ```
 
@@ -205,9 +209,9 @@ You can also search on nested fields like this:
 
 ```json
 {
-    "where": {
-        "customData->data->>info": "Some text",
-    }
+  "where": {
+    "customData$data$info": "Some text"
+  }
 }
 ```
 
@@ -215,9 +219,9 @@ You can also search on numbers like this:
 
 ```json
 {
-    "where": {
-        "customData->testNumber": 6,
-    }
+  "where": {
+    "customData$testNumber": 6
+  }
 }
 ```
 
@@ -225,25 +229,23 @@ or with number operators like this:
 
 ```json
 {
-    "where": {
-        "customData->testNumber": {
-            "gt": 5
-        },
+  "where": {
+    "customData$testNumber": {
+      "gt": 5
     }
+  }
 }
 ```
 
 ```json
 {
-    "where": {
-        "customData->testNumber": {
-            "in": [4,5,6]
-        },
+  "where": {
+    "customData$testNumber": {
+      "in": [4, 5, 6]
     }
+  }
 }
 ```
-
-Note: be aware that the `->>` operator will return the value as a string.
 
 ## Aggregations
 
