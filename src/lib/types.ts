@@ -39,7 +39,12 @@ export interface OperationUtils<M extends Model> {
 }
 
 // LogicalIterator types and subtypes
-export type ExpressionValue = Expression | string | number;
+export type ExpressionValue =
+  | Expression
+  | string
+  | number
+  | string[]
+  | number[];
 export type ExpressionObject = {
   [key: string]: ExpressionValue;
 };
@@ -47,7 +52,9 @@ export type Expression =
   | ExpressionObject
   | ExpressionObject[]
   | string
-  | number;
+  | number
+  | string[]
+  | number[];
 export type PropertyOmissionPredicate = (propertyName?: string) => boolean;
 
 export type Item = {

@@ -1,10 +1,19 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sliceRelation = sliceRelation;
 exports.Operations = Operations;
 exports.isFieldExpression = isFieldExpression;
 exports.getFieldExpressionRef = getFieldExpressionRef;
 exports.castTo = castTo;
+/**
+ * The utils helpers are a set of common helpers to be passed around during
+ * filter execution. It stores all default operators, custom operators and
+ * functions which directly touch these operators.
+ */
+const lodash_1 = __importDefault(require("lodash"));
 const objection_1 = require("objection");
 const LogicalIterator_1 = require("./LogicalIterator");
 /**
@@ -194,12 +203,22 @@ function getFieldExpressionRef(property) {
  */
 function castTo(reference, operand) {
     const type = typeof operand;
-    if (type === 'string') {
+    // 'in' operation
+    if (type === 'object' && lodash_1.default.isArray(operand) && operand.length > 0) {
+        if (typeof operand[0] === 'string') {
+            return reference.castText();
+        }
+        else if (typeof operand[0] === 'number') {
+            return reference.castDecimal();
+        }
+    }
+    // 'boolean' can be 'exists' operation
+    if (type === 'string' || type === 'boolean') {
         return reference.castText();
     }
-    if (type === 'boolean') {
-        return reference.castBool();
-    }
+    // if (type === 'boolean') {
+    //   return reference.castBool();
+    // }
     if (type === 'number') {
         return reference.castDecimal();
     }

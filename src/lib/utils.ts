@@ -3,7 +3,7 @@
  * filter execution. It stores all default operators, custom operators and
  * functions which directly touch these operators.
  */
-import _ from 'lodash';
+import _, { isArray } from 'lodash';
 import {
   Model,
   QueryBuilder,
@@ -273,12 +273,23 @@ export function castTo(
   operand: Expression,
 ): ReferenceBuilder {
   const type = typeof operand;
-  if (type === 'string') {
+
+  // 'in' operation
+  if (type === 'object' && _.isArray(operand) && operand.length > 0) {
+    if (typeof operand[0] === 'string') {
+      return reference.castText();
+    } else if (typeof operand[0] === 'number') {
+      return reference.castDecimal();
+    }
+  }
+
+  // 'boolean' can be 'exists' operation
+  if (type === 'string' || type === 'boolean') {
     return reference.castText();
   }
-  if (type === 'boolean') {
-    return reference.castBool();
-  }
+  // if (type === 'boolean') {
+  //   return reference.castBool();
+  // }
   if (type === 'number') {
     return reference.castDecimal();
   }

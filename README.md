@@ -18,6 +18,11 @@ Load a bunch of related data in a single query. This is useful for getting a lis
 
 Creating quick counts and sums on a model can speed up development significantly. An example could be the _numberOfOrders_ for a _Customer_ model.
 
+#### 4. Returning
+
+The returned data is paginated by default and has a max limit of 100 records.
+You can specify the max limit with the field `defaultPageLimit`in the definition of the class.
+
 ## Usage
 
 The filtering library can be applied onto every _findAll_ REST endpoint e.g. `GET /api/{Model}?filter={"limit": 1}`
@@ -210,7 +215,7 @@ You can also search on nested fields like this:
 ```json
 {
   "where": {
-    "customData$data$info": "Some text"
+    "customData$data.info": "Some text"
   }
 }
 ```
@@ -240,8 +245,20 @@ or with number operators like this:
 ```json
 {
   "where": {
-    "customData$testNumber": {
+    "customData$content.testNumber": {
       "in": [4, 5, 6]
+    }
+  }
+}
+```
+
+or with exists operator like this:
+
+```json
+{
+  "where": {
+    "customData$propertyName": {
+      "exists": true
     }
   }
 }

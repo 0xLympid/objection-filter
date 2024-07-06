@@ -6,6 +6,8 @@ import { getPropertiesFromExpression as _getPropertiesFromExpression } from './l
 import { BaseModel, FilterQueryBuilderOptions } from './lib/types';
 import { sliceRelation as _sliceRelation } from './lib/utils';
 
+export * from './lib/types';
+
 export function buildFilter<M extends BaseModel, K extends typeof Model>(
   modelClass: K,
   trx?: Transaction,
