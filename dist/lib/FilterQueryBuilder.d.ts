@@ -16,7 +16,7 @@
  * in the same scope, since there's a join
  */
 import { QueryBuilder, Transaction, Model as ObjModel } from 'objection';
-import { FilterQueryBuilderOptions, OperationUtils, FilterQueryParams, BaseModel, RequireExpression } from './types';
+import { FilterQueryBuilderOptions, OperationUtils, FilterQueryParams, BaseModel, Expression } from './types';
 export default class FilterQueryBuilder<M extends BaseModel, K extends typeof ObjModel> {
     Model: K;
     _builder: QueryBuilder<M>;
@@ -39,7 +39,7 @@ export default class FilterQueryBuilder<M extends BaseModel, K extends typeof Ob
  * @param {Object} filter
  * @param {QueryBuilder} builder The root query builder
  */
-export declare function applyRequire<M extends BaseModel>(filter: RequireExpression | undefined, builder: QueryBuilder<M>, utils: OperationUtils<M>): QueryBuilder<M>;
+export declare function applyRequire<M extends BaseModel>(filter: Expression | undefined, builder: QueryBuilder<M>, utils: OperationUtils<M>): QueryBuilder<M>;
 /**
  * Order the result by a root model field or order related models
  * Related properties are ordered locally (within the subquery) and not globally

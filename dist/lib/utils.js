@@ -3,11 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sliceRelation = sliceRelation;
-exports.Operations = Operations;
-exports.isFieldExpression = isFieldExpression;
-exports.getFieldExpressionRef = getFieldExpressionRef;
-exports.castTo = castTo;
+exports.castTo = exports.getFieldExpressionRef = exports.isFieldExpression = exports.Operations = exports.sliceRelation = void 0;
 /**
  * The utils helpers are a set of common helpers to be passed around during
  * filter execution. It stores all default operators, custom operators and
@@ -40,6 +36,7 @@ function sliceRelation(relatedProperty, delimiter = '.', rootTableName, fieldExp
             : propertyName;
     return { propertyName, relationName, fullyQualifiedProperty };
 }
+exports.sliceRelation = sliceRelation;
 /**
  * Create operation application utilities with some custom options
  * If options.operators is specified
@@ -174,6 +171,7 @@ function Operations(options) {
     };
     return { applyPropertyExpression, onAggBuild };
 }
+exports.Operations = Operations;
 /**
  * Determines if a property is a [FieldExpression](https://vincit.github.io/objection.js/api/types/#type-fieldexpression)
  * @param property The property to check
@@ -181,6 +179,7 @@ function Operations(options) {
 function isFieldExpression(property) {
     return property.indexOf('$') > -1;
 }
+exports.isFieldExpression = isFieldExpression;
 /**
  * Builds a reference for a FieldExpression with support for fully-qualified properties
  * @param property a FieldExpression string
@@ -196,6 +195,7 @@ function getFieldExpressionRef(property) {
     const propertyName = property.replace('$', ':');
     return (0, objection_1.ref)(propertyName);
 }
+exports.getFieldExpressionRef = getFieldExpressionRef;
 /**
  * Casts a ReferenceBuilder instance to a type based on the type of the operand
  * @param reference A reference built from a filterExpression
@@ -225,4 +225,5 @@ function castTo(reference, operand) {
     // Don't cast by default
     return reference;
 }
+exports.castTo = castTo;
 //# sourceMappingURL=utils.js.map

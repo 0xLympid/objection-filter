@@ -7,7 +7,7 @@ export interface Relation {
   fullyQualifiedProperty: string;
 }
 
-export type Primitive = number | string | null;
+export type Primitive = number | string | boolean | null;
 
 export interface BaseModel extends Model {
   count?: number;
@@ -43,6 +43,7 @@ export type ExpressionValue =
   | Expression
   | string
   | number
+  | boolean
   | string[]
   | number[];
 export type ExpressionObject = {
@@ -53,6 +54,7 @@ export type Expression =
   | ExpressionObject[]
   | string
   | number
+  | boolean
   | string[]
   | number[];
 export type PropertyOmissionPredicate = (propertyName?: string) => boolean;

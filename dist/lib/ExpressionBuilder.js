@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createRelationExpression = createRelationExpression;
+exports.createRelationExpression = void 0;
 const lodash_1 = require("lodash");
 const utils_1 = require("./utils");
 /**
@@ -43,4 +43,5 @@ function createRelationExpression(fields) {
     // Reduce the property map into a nested expression
     return toRelationSubExpression(tree);
 }
+exports.createRelationExpression = createRelationExpression;
 //# sourceMappingURL=ExpressionBuilder.js.map
