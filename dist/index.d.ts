@@ -10,4 +10,3 @@ export declare const FilterQueryBuilder: typeof _FilterQueryBuilder;
 export declare const sliceRelation: typeof _sliceRelation;
 export declare const createRelationExpression: typeof _createRelationExpression;
 export declare const getPropertiesFromExpression: typeof _getPropertiesFromExpression;
-export { BaseModel, FilterQueryBuilderOptions };

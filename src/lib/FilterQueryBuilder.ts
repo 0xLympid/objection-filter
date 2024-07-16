@@ -61,7 +61,7 @@ export default class FilterQueryBuilder<
 
   utils: OperationUtils<M>;
 
-  defaultPageLimit: number = 100;
+  defaultPageLimit = 100;
 
   /**
    * @param {Model} Model
@@ -88,7 +88,6 @@ export default class FilterQueryBuilder<
 
   build(params: FilterQueryParams = {}): QueryBuilder<M> {
     const { fields, limit, offset, order, where, aggregations } = params;
-
     applyRequire(params.require, this._builder, this.utils);
 
     applyOrder(order, this._builder);

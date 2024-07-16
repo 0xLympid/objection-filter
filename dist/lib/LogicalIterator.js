@@ -1,6 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.iterateLogicalExpression = exports.getPropertiesFromExpression = exports.hasSubExpression = void 0;
+exports.hasSubExpression = hasSubExpression;
+exports.getPropertiesFromExpression = getPropertiesFromExpression;
+exports.iterateLogicalExpression = iterateLogicalExpression;
 const lodash_1 = require("lodash");
 // Types
 const OR = 'or';
@@ -31,7 +33,6 @@ function hasSubExpression(lhs,
 rhs) {
     return [OR, AND].includes(lhs);
 }
-exports.hasSubExpression = hasSubExpression;
 /**
  * Given a logical expression return an array of all properties
  * @param {Object} expression
@@ -56,7 +57,6 @@ function getPropertiesFromExpression(expression, test = () => true) {
     }
     return (0, lodash_1.uniq)(properties);
 }
-exports.getPropertiesFromExpression = getPropertiesFromExpression;
 /**
  * Returns a function which iterates an object composed of or/and operators
  * Values of or/and operators can be either objects or arrays
@@ -109,5 +109,4 @@ onLiteral, // onLiteral(value, builder)
     };
     return iterator;
 }
-exports.iterateLogicalExpression = iterateLogicalExpression;
 //# sourceMappingURL=LogicalIterator.js.map

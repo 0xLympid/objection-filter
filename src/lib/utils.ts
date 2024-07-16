@@ -99,6 +99,13 @@ export function Operations<M extends Model>(
           .whereIn(property, operand as unknown as QueryBuilder<M>)
       );
     },
+    'nin': (property, operand, builder) => {
+      return (
+        builder
+          // HACK: Use an unknown cast temporarily
+          .whereNotIn(property, operand as unknown as QueryBuilder<M>)
+      );
+    },
     'exists': (property, operand, builder) => {
       return operand
         ? builder.whereNotNull(property)

@@ -29,7 +29,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.applyLimit = exports.applyFields = exports.applyOrder = exports.applyRequire = void 0;
+exports.applyRequire = applyRequire;
+exports.applyOrder = applyOrder;
+exports.applyFields = applyFields;
+exports.applyLimit = applyLimit;
 const lodash_1 = __importDefault(require("lodash"));
 const objection_1 = require("objection");
 const ExpressionBuilder_1 = require("./ExpressionBuilder");
@@ -306,7 +309,6 @@ function applyRequire(filter = {}, builder, utils) {
     });
     return builder;
 }
-exports.applyRequire = applyRequire;
 /**
  * Order the result by a root model field or order related models
  * Related properties are ordered locally (within the subquery) and not globally
@@ -347,7 +349,6 @@ function applyOrder(order, builder) {
     });
     return builder;
 }
-exports.applyOrder = applyOrder;
 /**
  * Based on a relation name, select a subset of fields. Do nothing if there are no fields
  * @param {Builder} builder An instance of a knex builder
@@ -398,11 +399,9 @@ function applyFields(fields = [], builder) {
     lodash_1.default.map(fieldsByRelation, (_fields, relationName) => selectFields(_fields, builder, relationName));
     return builder;
 }
-exports.applyFields = applyFields;
 function applyLimit(limit, offset = 0, builder, defaultPageLimit) {
     limit = !limit || limit > defaultPageLimit ? defaultPageLimit : limit;
     builder.page(offset, limit);
     return builder;
 }
-exports.applyLimit = applyLimit;
 //# sourceMappingURL=FilterQueryBuilder.js.map

@@ -19,4 +19,3 @@ export const FilterQueryBuilder = _FilterQueryBuilder;
 export const sliceRelation = _sliceRelation;
 export const createRelationExpression = _createRelationExpression;
 export const getPropertiesFromExpression = _getPropertiesFromExpression;
-export { BaseModel, FilterQueryBuilderOptions };

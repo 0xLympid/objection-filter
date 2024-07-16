@@ -68,7 +68,7 @@ There are a number of built-in operations that can be applied to columns (custom
 1. **like** - The SQL _LIKE_ operator, can be used with expressions such as _ab%_ to search for strings that start with _ab_
 2. **gt/lt/gte/lte** - Greater than and Less than operators for numerical fields
 3. **=/equals** - Explicitly specify equality
-4. **in** - Whether the target value is in an array of values
+4. **in/nin** - Whether the target value is in or not in an array of values
 5. **exists** - Whether a property is not null
 6. **or** - A top level _OR_ conditional operator
 
@@ -317,15 +317,23 @@ Transform a basic aggregation like this on a `GET /Customers` endpoint:
 2. gt/lt/gte/lte
 3. =/equals
 4. in
-5. exists
-6. or
-7. fields
-8. limit
-9. offset
-10. order
-11. where
-12. aggregations
+5. nin
+6. exists
+7. or
+8. fields
+9. limit
+10. offset
+11. order
+12. where
+13. aggregations
 
 ## Known issues
 
-1. The search filter on JSON doesn't accept array search. It only supports object search.
+1. The search filter on JSON doesn't accept array search. It only supports object search. ? FIXED ?
+
+## TODOS:
+
+remove dependencies:
+
+- bluebird
+- nyc
