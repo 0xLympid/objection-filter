@@ -401,7 +401,7 @@ function applyFields(fields = [], builder) {
 }
 function applyLimit(limit, offset = 0, builder, defaultPageLimit) {
     limit = !limit || limit > defaultPageLimit ? defaultPageLimit : limit;
-    builder.page(offset, limit);
+    builder.page(offset / limit, limit);
     return builder;
 }
 //# sourceMappingURL=FilterQueryBuilder.js.map

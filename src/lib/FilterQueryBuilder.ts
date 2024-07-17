@@ -575,7 +575,7 @@ export function applyLimit<M extends BaseModel>(
 ): QueryBuilder<M> {
   limit = !limit || limit > defaultPageLimit ? defaultPageLimit : limit;
 
-  builder.page(offset, limit);
+  builder.page(offset / limit, limit);
 
   return builder;
 }
