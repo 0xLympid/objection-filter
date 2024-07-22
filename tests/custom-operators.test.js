@@ -63,14 +63,14 @@ describe('Custom Operators', function () {
             },
           },
         };
-        const result = await buildFilter(Person, null, options).build({
+        const { results } = await buildFilter(Person, null, options).build({
           where: {
             firstName: { inCustom: null },
           },
         });
-        result.should.be.an.an('array');
-        result.should.have.length(1);
-        result[0].firstName.should.equal('F00');
+        results.should.be.an.an('array');
+        results.should.have.length(1);
+        results[0].firstName.should.equal('F00');
       });
 
       it('should work with lower() function', async () => {
@@ -84,14 +84,14 @@ describe('Custom Operators', function () {
             },
           },
         };
-        const result = await buildFilter(Person, null, options).build({
+        const { results } = await buildFilter(Person, null, options).build({
           where: {
             firstName: { equalsLower: 'f00' },
           },
         });
-        result.should.be.an.an('array');
-        result.should.have.length(1);
-        result[0].firstName.should.equal('F00');
+        results.should.be.an.an('array');
+        results.should.have.length(1);
+        results[0].firstName.should.equal('F00');
       });
 
       it('should override existing operator', async () => {
@@ -102,14 +102,14 @@ describe('Custom Operators', function () {
             },
           },
         };
-        const result = await buildFilter(Person, null, options).build({
+        const {results} = await buildFilter(Person, null, options).build({
           where: {
             firstName: { in: 'F00' },
           },
         });
-        result.should.be.an.an('array');
-        result.should.have.length(1);
-        result[0].firstName.should.equal('F00');
+        results.should.be.an.an('array');
+        results.should.have.length(1);
+        results[0].firstName.should.equal('F00');
       });
 
       it('should work alongside default operators', async () => {
@@ -120,15 +120,15 @@ describe('Custom Operators', function () {
             },
           },
         };
-        const result = await buildFilter(Person, null, options).build({
+        const {results} = await buildFilter(Person, null, options).build({
           where: {
             firstName: { inCustom: 'F00' },
             lastName: { equals: 'L09' },
           },
         });
-        result.should.be.an.an('array');
-        result.should.have.length(1);
-        result[0].firstName.should.equal('F00');
+        results.should.be.an.an('array');
+        results.should.have.length(1);
+        results[0].firstName.should.equal('F00');
       });
     });
   });

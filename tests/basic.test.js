@@ -141,6 +141,17 @@ describe('basic filters', function () {
               _.sortBy(results, ['birthYear', 'id']).map(({ id }) => id),
             );
         });
+        it('should accept the difference operator', async () => {
+          const {results} = await buildFilter(Person).build({
+            where: {
+              firstName: { '!=': 'F00' },
+            },
+          });
+
+          results.should.be.an.an('array');
+          results.should.have.length(9);
+          results[0].firstName.should.equal('F01');
+        });
       });
     });
   });

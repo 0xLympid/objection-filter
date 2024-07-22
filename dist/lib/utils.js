@@ -63,6 +63,9 @@ function Operations(options) {
         'gte': (property, operand, builder) => {
             return builder.where(property, '>=', operand);
         },
+        '!=': (property, operand, builder) => {
+            return builder.whereNot(property, '=', operand);
+        },
         'equals': (property, operand, builder) => {
             return builder.where(property, operand);
         },

@@ -86,6 +86,9 @@ export function Operations<M extends Model>(
     'gte': (property, operand, builder) => {
       return builder.where(property, '>=', operand as number);
     },
+    '!=': (property, operand, builder) => {
+      return builder.whereNot(property, '=', operand as number);
+    },
     'equals': (property, operand, builder) => {
       return builder.where(property, operand as PrimitiveValue);
     },

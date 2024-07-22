@@ -316,16 +316,17 @@ Transform a basic aggregation like this on a `GET /Customers` endpoint:
 1. like
 2. gt/lt/gte/lte
 3. =/equals
-4. in
-5. nin
-6. exists
-7. or
-8. fields
-9. limit
-10. offset
-11. order
-12. where
-13. aggregations
+4. !=
+5. in
+6. nin
+7. exists
+8. or
+9. fields
+10. limit
+11. offset
+12. order
+13. where
+14. aggregations
 
 ## Known issues
 
