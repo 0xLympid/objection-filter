@@ -86,7 +86,7 @@ export interface FilterQueryBuilderOptions<M extends Model> {
   defaultPageLimit?: number;
 }
 
-export interface FilterQueryParams {
+export interface FilterExpression {
   fields?: string[];
   limit?: number;
   offset?: number;

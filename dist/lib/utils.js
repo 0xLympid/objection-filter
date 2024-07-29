@@ -49,7 +49,7 @@ function sliceRelation(relatedProperty, delimiter = '.', rootTableName, fieldExp
 function Operations(options) {
     const defaultOperators = {
         'like': (property, operand, builder) => {
-            return builder.where(property, 'like', `%${operand}%`);
+            return builder.where((0, objection_1.raw)('LOWER(??)', [property]), 'like', `%${typeof operand === 'string' ? operand.toLowerCase() : operand}%`);
         },
         'lt': (property, operand, builder) => {
             return builder.where(property, '<', operand);

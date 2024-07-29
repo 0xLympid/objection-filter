@@ -16,7 +16,7 @@
  * in the same scope, since there's a join
  */
 import { QueryBuilder, Transaction, Model as ObjModel } from 'objection';
-import { FilterQueryBuilderOptions, OperationUtils, FilterQueryParams, BaseModel, RequireExpression } from './types';
+import { FilterQueryBuilderOptions, OperationUtils, FilterExpression, BaseModel, RequireExpression } from './types';
 export default class FilterQueryBuilder<M extends BaseModel, K extends typeof ObjModel> {
     Model: K;
     _builder: QueryBuilder<M>;
@@ -28,7 +28,7 @@ export default class FilterQueryBuilder<M extends BaseModel, K extends typeof Ob
      * @param {Object} options.operators Custom operator handlers
      */
     constructor(Model: K, trx?: Transaction, options?: FilterQueryBuilderOptions<M>);
-    build(params?: FilterQueryParams): QueryBuilder<M>;
+    build(params?: FilterExpression): QueryBuilder<M>;
     count(): Promise<number>;
 }
 /**

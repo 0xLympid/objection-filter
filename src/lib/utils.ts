@@ -3,13 +3,14 @@
  * filter execution. It stores all default operators, custom operators and
  * functions which directly touch these operators.
  */
-import _, { isArray } from 'lodash';
+import _ from 'lodash';
 import {
   Model,
   QueryBuilder,
   PrimitiveValue,
   ref,
   ReferenceBuilder,
+  raw,
 } from 'objection';
 
 import { iterateLogicalExpression, hasSubExpression } from './LogicalIterator';
@@ -72,7 +73,11 @@ export function Operations<M extends Model>(
 ): OperationUtils<M> {
   const defaultOperators: Operators<M> = {
     'like': (property, operand, builder) => {
-      return builder.where(property, 'like', `%${operand}%` as string);
+      return builder.where(
+        raw('LOWER(??)', [property]),
+        'like',
+        `%${typeof operand === 'string' ? operand.toLowerCase() : operand}%` as string,
+      );
     },
     'lt': (property, operand, builder) => {
       return builder.where(property, '<', operand as number);

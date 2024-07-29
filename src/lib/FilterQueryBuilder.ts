@@ -37,7 +37,7 @@ import {
 import {
   FilterQueryBuilderOptions,
   OperationUtils,
-  FilterQueryParams,
+  FilterExpression,
   BaseModel,
   AggregationConfig,
   RequireExpression,
@@ -86,7 +86,7 @@ export default class FilterQueryBuilder<
     this.utils = Operations({ operators, onAggBuild });
   }
 
-  build(params: FilterQueryParams = {}): QueryBuilder<M> {
+  build(params: FilterExpression = {}): QueryBuilder<M> {
     const { fields, limit, offset, order, where, aggregations } = params;
     applyRequire(params.require, this._builder, this.utils);
 
