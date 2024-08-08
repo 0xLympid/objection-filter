@@ -49,6 +49,7 @@ export interface FilterExpression {
     order?: string;
     where?: Expression;
     require?: Expression;
+    include?: string[];
     aggregations?: AggregationConfig[];
 }
 export interface AggregationConfig {

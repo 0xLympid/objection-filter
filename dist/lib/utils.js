@@ -66,6 +66,12 @@ function Operations(options) {
         '!=': (property, operand, builder) => {
             return builder.whereNot(property, '=', operand);
         },
+        'neq': (property, operand, builder) => {
+            return builder.whereNot(property, '=', operand);
+        },
+        'eq': (property, operand, builder) => {
+            return builder.where(property, operand);
+        },
         'equals': (property, operand, builder) => {
             return builder.where(property, operand);
         },

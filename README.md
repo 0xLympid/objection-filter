@@ -57,7 +57,8 @@ Available filter properties include:
   "limit": 10,
   "offset": 10,
   // An array of dot notation fields to select on the root model
-  "fields": ["firstName", "lastName", "orders.code", "products.name"]
+  "fields": ["firstName", "lastName", "orders.code", "products.name"],
+  "include": ["profile"]
 }
 ```
 
@@ -67,10 +68,11 @@ There are a number of built-in operations that can be applied to columns (custom
 
 1. **like** - The SQL _LIKE_ operator, can be used with expressions such as _ab%_ to search for strings that start with _ab_
 2. **gt/lt/gte/lte** - Greater than and Less than operators for numerical fields
-3. **=/equals** - Explicitly specify equality
-4. **in/nin** - Whether the target value is in or not in an array of values
-5. **exists** - Whether a property is not null
-6. **or** - A top level _OR_ conditional operator
+3. **=/eq/equals** - Explicitly specify equality
+4. **!=/neq** - Explicitly specify not equality
+5. **in/nin** - Whether the target value is in or not in an array of values
+6. **exists** - Whether a property is not null
+7. **or** - A top level _OR_ conditional operator
 
 For any operators not available (eg _ILIKE_, refer to the custom operators section below).
 
@@ -315,8 +317,8 @@ Transform a basic aggregation like this on a `GET /Customers` endpoint:
 
 1. like
 2. gt/lt/gte/lte
-3. =/equals
-4. !=
+3. =/eq/equals
+4. !=/neq
 5. in
 6. nin
 7. exists

@@ -33,6 +33,7 @@ exports.applyRequire = applyRequire;
 exports.applyOrder = applyOrder;
 exports.applyFields = applyFields;
 exports.applyLimit = applyLimit;
+exports.applyInclude = applyInclude;
 const lodash_1 = __importDefault(require("lodash"));
 const objection_1 = require("objection");
 const ExpressionBuilder_1 = require("./ExpressionBuilder");
@@ -56,12 +57,13 @@ class FilterQueryBuilder {
         this.utils = (0, utils_1.Operations)({ operators, onAggBuild });
     }
     build(params = {}) {
-        const { fields, limit, offset, order, where, aggregations } = params;
+        const { fields, limit, offset, order, where, aggregations, include } = params;
         applyRequire(params.require, this._builder, this.utils);
         applyOrder(order, this._builder);
         where &&
             applyRequire(Object.assign({}, where), this._builder, this.utils);
         aggregations && applyAggregations(aggregations, this._builder, this.utils);
+        applyInclude(include, this._builder);
         applyLimit(limit, offset, this._builder, this.defaultPageLimit);
         applyFields(fields, this._builder);
         return this._builder;
@@ -402,6 +404,12 @@ function applyFields(fields = [], builder) {
 function applyLimit(limit, offset = 0, builder, defaultPageLimit) {
     limit = !limit || limit > defaultPageLimit ? defaultPageLimit : limit;
     builder.page(offset / limit, limit);
+    return builder;
+}
+function applyInclude(include, builder) {
+    if (include) {
+        include.forEach((model) => builder.withGraphFetched(model));
+    }
     return builder;
 }
 //# sourceMappingURL=FilterQueryBuilder.js.map

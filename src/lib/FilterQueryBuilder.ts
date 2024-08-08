@@ -87,7 +87,8 @@ export default class FilterQueryBuilder<
   }
 
   build(params: FilterExpression = {}): QueryBuilder<M> {
-    const { fields, limit, offset, order, where, aggregations } = params;
+    const { fields, limit, offset, order, where, aggregations, include } =
+      params;
     applyRequire(params.require, this._builder, this.utils);
 
     applyOrder(order, this._builder);
@@ -98,6 +99,7 @@ export default class FilterQueryBuilder<
         this.utils,
       );
     aggregations && applyAggregations(aggregations, this._builder, this.utils);
+    applyInclude(include, this._builder);
     applyLimit(limit, offset, this._builder, this.defaultPageLimit);
 
     applyFields(fields, this._builder);
@@ -576,6 +578,17 @@ export function applyLimit<M extends BaseModel>(
   limit = !limit || limit > defaultPageLimit ? defaultPageLimit : limit;
 
   builder.page(offset / limit, limit);
+
+  return builder;
+}
+
+export function applyInclude<M extends BaseModel>(
+  include: string[] | undefined,
+  builder: QueryBuilder<M>,
+): QueryBuilder<M> {
+  if (include) {
+    include.forEach((model) => builder.withGraphFetched(model));
+  }
 
   return builder;
 }

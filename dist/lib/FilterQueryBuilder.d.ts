@@ -55,3 +55,4 @@ export declare function applyOrder<M extends BaseModel>(order: string | undefine
  */
 export declare function applyFields<M extends BaseModel>(fields: string[] | undefined, builder: QueryBuilder<M>): QueryBuilder<M>;
 export declare function applyLimit<M extends BaseModel>(limit: number | undefined, offset: number | undefined, builder: QueryBuilder<M>, defaultPageLimit: number): QueryBuilder<M>;
+export declare function applyInclude<M extends BaseModel>(include: string[] | undefined, builder: QueryBuilder<M>): QueryBuilder<M>;

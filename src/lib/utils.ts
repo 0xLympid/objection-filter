@@ -94,6 +94,12 @@ export function Operations<M extends Model>(
     '!=': (property, operand, builder) => {
       return builder.whereNot(property, '=', operand as number);
     },
+    'neq': (property, operand, builder) => {
+      return builder.whereNot(property, '=', operand as number);
+    },
+    'eq': (property, operand, builder) => {
+      return builder.where(property, operand as PrimitiveValue);
+    },
     'equals': (property, operand, builder) => {
       return builder.where(property, operand as PrimitiveValue);
     },
