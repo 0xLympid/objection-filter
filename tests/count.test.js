@@ -34,7 +34,10 @@ describe('count queries', function () {
       });
 
       it('should count with a limit', async () => {
-        const result = await builder.build({ limit: 1 });
+        const result = await builder.build({
+          where: { id: { exists: true } },
+          limit: 1,
+        });
         const count = await builder.count();
         result.length.should.equal(1);
         count.should.equal(10);
@@ -90,7 +93,7 @@ describe('count queries', function () {
       });
 
       it('should count with an eager expression and limit', async () => {
-        const result = await builder.build({ limit: 2, eager: 'movies' });
+        const result = await builder.build({ limit: 2 });
         const count = await builder.count();
         result.length.should.equal(2);
         count.should.equal(10);
@@ -99,11 +102,8 @@ describe('count queries', function () {
       it('should count with an eager.where and limit', async () => {
         const result = await builder.build({
           limit: 1,
-          eager: {
-            where: {
-              'movies.name': { in: ['M00', 'M10'] },
-            },
-            movies: true,
+          where: {
+            'movies.name': { in: ['M00', 'M10'] },
           },
         });
         const count = await builder.count();

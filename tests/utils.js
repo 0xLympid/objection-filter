@@ -17,8 +17,8 @@ module.exports = {
       client: 'postgres',
       connection: {
         host: process.env.DB_HOST || '127.0.0.1',
-        user: process.env.DB_USER || 'test',
-        password: process.env.DB_PASSWORD || 'test',
+        user: process.env.DB_USER || 'lympid',
+        password: process.env.DB_PASSWORD || 'password',
         database: process.env.DB_NAME || 'lympid',
         port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 5432,
       },

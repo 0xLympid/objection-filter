@@ -28,7 +28,10 @@ export default class FilterQueryBuilder<M extends BaseModel, K extends typeof Ob
      * @param {Object} options.operators Custom operator handlers
      */
     constructor(Model: K, trx?: Transaction, options?: FilterQueryBuilderOptions<M>);
+    basicBuild(params?: FilterExpression): QueryBuilder<M>;
     build(params?: FilterExpression): QueryBuilder<M>;
+    paginated(params?: FilterExpression): QueryBuilder<M>;
+    first(params?: FilterExpression): QueryBuilder<M, M | undefined>;
     count(): Promise<number>;
 }
 /**
@@ -54,5 +57,6 @@ export declare function applyOrder<M extends BaseModel>(order: string | undefine
  * @param {QueryBuilder} builder The root query builder
  */
 export declare function applyFields<M extends BaseModel>(fields: string[] | undefined, builder: QueryBuilder<M>): QueryBuilder<M>;
+export declare function applyPage<M extends BaseModel>(limit: number | undefined, offset: number | undefined, builder: QueryBuilder<M>, defaultPageLimit: number): QueryBuilder<M>;
 export declare function applyLimit<M extends BaseModel>(limit: number | undefined, offset: number | undefined, builder: QueryBuilder<M>, defaultPageLimit: number): QueryBuilder<M>;
 export declare function applyInclude<M extends BaseModel>(include: string[] | undefined, builder: QueryBuilder<M>): QueryBuilder<M>;

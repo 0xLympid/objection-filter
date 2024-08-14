@@ -86,9 +86,8 @@ export default class FilterQueryBuilder<
     this.utils = Operations({ operators, onAggBuild });
   }
 
-  build(params: FilterExpression = {}): QueryBuilder<M> {
-    const { fields, limit, offset, order, where, aggregations, include } =
-      params;
+  basicBuild(params: FilterExpression = {}): QueryBuilder<M> {
+    const { fields, order, where, aggregations, include } = params;
     applyRequire(params.require, this._builder, this.utils);
 
     applyOrder(order, this._builder);
@@ -100,11 +99,30 @@ export default class FilterQueryBuilder<
       );
     aggregations && applyAggregations(aggregations, this._builder, this.utils);
     applyInclude(include, this._builder);
-    applyLimit(limit, offset, this._builder, this.defaultPageLimit);
 
     applyFields(fields, this._builder);
 
     return this._builder;
+  }
+
+  build(params: FilterExpression = {}): QueryBuilder<M> {
+    this.basicBuild(params);
+    const { limit, offset } = params;
+    applyLimit(limit, offset, this._builder, this.defaultPageLimit);
+
+    return this._builder;
+  }
+
+  paginated(params: FilterExpression = {}): QueryBuilder<M> {
+    this.basicBuild(params);
+    const { limit, offset } = params;
+    applyPage(limit, offset, this._builder, this.defaultPageLimit);
+
+    return this._builder;
+  }
+
+  first(params: FilterExpression = {}): QueryBuilder<M, M | undefined> {
+    return this.basicBuild(params).first();
   }
 
   async count(): Promise<number> {
@@ -569,7 +587,7 @@ export function applyFields<M extends BaseModel>(
   return builder;
 }
 
-export function applyLimit<M extends BaseModel>(
+export function applyPage<M extends BaseModel>(
   limit: number | undefined,
   offset: number | undefined = 0,
   builder: QueryBuilder<M>,
@@ -578,6 +596,23 @@ export function applyLimit<M extends BaseModel>(
   limit = !limit || limit > defaultPageLimit ? defaultPageLimit : limit;
 
   builder.page(offset / limit, limit);
+
+  return builder;
+}
+
+export function applyLimit<M extends BaseModel>(
+  limit: number | undefined,
+  offset: number | undefined,
+  builder: QueryBuilder<M>,
+  defaultPageLimit: number,
+): QueryBuilder<M> {
+  limit = !limit || limit > defaultPageLimit ? defaultPageLimit : limit;
+  if (limit) {
+    builder.limit(limit);
+  }
+  if (offset) {
+    builder.offset(offset);
+  }
 
   return builder;
 }

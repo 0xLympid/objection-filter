@@ -91,7 +91,7 @@ export interface FilterExpression {
   limit?: number;
   offset?: number;
   order?: string;
-  where?: Expression;
+  where?: ExpressionObject;
   require?: Expression;
   include?: string[];
   aggregations?: AggregationConfig[];

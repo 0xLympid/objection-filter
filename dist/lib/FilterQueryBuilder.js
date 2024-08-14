@@ -32,6 +32,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.applyRequire = applyRequire;
 exports.applyOrder = applyOrder;
 exports.applyFields = applyFields;
+exports.applyPage = applyPage;
 exports.applyLimit = applyLimit;
 exports.applyInclude = applyInclude;
 const lodash_1 = __importDefault(require("lodash"));
@@ -56,17 +57,31 @@ class FilterQueryBuilder {
         // Initialize instance specific utilities
         this.utils = (0, utils_1.Operations)({ operators, onAggBuild });
     }
-    build(params = {}) {
-        const { fields, limit, offset, order, where, aggregations, include } = params;
+    basicBuild(params = {}) {
+        const { fields, order, where, aggregations, include } = params;
         applyRequire(params.require, this._builder, this.utils);
         applyOrder(order, this._builder);
         where &&
             applyRequire(Object.assign({}, where), this._builder, this.utils);
         aggregations && applyAggregations(aggregations, this._builder, this.utils);
         applyInclude(include, this._builder);
-        applyLimit(limit, offset, this._builder, this.defaultPageLimit);
         applyFields(fields, this._builder);
         return this._builder;
+    }
+    build(params = {}) {
+        this.basicBuild(params);
+        const { limit, offset } = params;
+        applyLimit(limit, offset, this._builder, this.defaultPageLimit);
+        return this._builder;
+    }
+    paginated(params = {}) {
+        this.basicBuild(params);
+        const { limit, offset } = params;
+        applyPage(limit, offset, this._builder, this.defaultPageLimit);
+        return this._builder;
+    }
+    first(params = {}) {
+        return this.basicBuild(params).first();
     }
     count() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -401,9 +416,19 @@ function applyFields(fields = [], builder) {
     lodash_1.default.map(fieldsByRelation, (_fields, relationName) => selectFields(_fields, builder, relationName));
     return builder;
 }
-function applyLimit(limit, offset = 0, builder, defaultPageLimit) {
+function applyPage(limit, offset = 0, builder, defaultPageLimit) {
     limit = !limit || limit > defaultPageLimit ? defaultPageLimit : limit;
     builder.page(offset / limit, limit);
+    return builder;
+}
+function applyLimit(limit, offset, builder, defaultPageLimit) {
+    limit = !limit || limit > defaultPageLimit ? defaultPageLimit : limit;
+    if (limit) {
+        builder.limit(limit);
+    }
+    if (offset) {
+        builder.offset(offset);
+    }
     return builder;
 }
 function applyInclude(include, builder) {
