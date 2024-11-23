@@ -104,6 +104,10 @@ There are a number of built-in operations that can be applied to columns (custom
 
 1. **like** - The SQL _LIKE_ operator, which can be used with expressions such as _ab%_ to search for strings that start with _ab_.
 2. **gt/lt/gte/lte** - Greater than and less than operators for numerical fields.
+    - lte - <=
+    - lt - <
+    - gte - >=
+    - gt - >
 3. **=/eq/equals** - Explicitly specify equality.
 4. **!=/neq** - Explicitly specify inequality.
 5. **in/nin** - Whether the target value is in or not in an array of values.

@@ -64,10 +64,14 @@ function Operations(options) {
             return builder.where(property, '>=', operand);
         },
         '!=': (property, operand, builder) => {
-            return builder.whereNot(property, '=', operand);
+            return builder
+                .whereNot(property, '=', operand)
+                .orWhereNull(property);
         },
         'neq': (property, operand, builder) => {
-            return builder.whereNot(property, '=', operand);
+            return builder
+                .whereNot(property, '=', operand)
+                .orWhereNull(property);
         },
         'eq': (property, operand, builder) => {
             return builder.where(property, operand);
@@ -86,7 +90,8 @@ function Operations(options) {
         'nin': (property, operand, builder) => {
             return (builder
                 // HACK: Use an unknown cast temporarily
-                .whereNotIn(property, operand));
+                .whereNotIn(property, operand)
+                .orWhereNull(property));
         },
         'exists': (property, operand, builder) => {
             return operand
