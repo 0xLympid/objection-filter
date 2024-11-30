@@ -100,7 +100,6 @@ class FilterQueryBuilder {
 exports.default = FilterQueryBuilder;
 const extractWhereClause = function (queryBuilder, knex) {
     const sqlObject = queryBuilder.toKnexQuery().toSQL();
-    console.log("sqlObject", sqlObject);
     const rawSQL = sqlObject.sql;
     const bindings = sqlObject.bindings;
     const whereStartIndex = rawSQL.toLowerCase().indexOf('where');
@@ -162,13 +161,15 @@ const buildAggregation = function (aggregation, builder, utils) {
         const distinctTag = distinct ? 'distinct ' : '';
         let whereClause = '';
         if (where) {
-            console.log("where", where);
             const requireQuery = applyRequire(where, Model.query(), utils);
-            console.log("requireQuery", requireQuery.toKnexQuery().toSQL());
             whereClause = `FILTER (${extractWhereClause(requireQuery, knex)})`;
         }
         return builder.select(knex.raw(`${type}(${distinctTag}??) ${whereClause} as ??`, [
-            field ? `transactions.${field}` : 'transactions.id',
+            field
+                ? `${Model.tableName}.${field}`
+                : Model.idColumn
+                    ? `${Model.tableName}.${Model.idColumn}`
+                    : `${Model.tableName}.id`,
             columnAlias,
         ]));
     }
