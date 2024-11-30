@@ -4,6 +4,34 @@ Aggregations can currently be added to the base model (not onto loaded models).
 
 The functions _count, sum, min, max, avg_ are supported, along with a _distinct_ flag.
 
+**NOTE: if you don't pass the `relation` field, the aggregation will be done on the root model.**
+
+Example:
+
+```json
+{
+  "aggregations": [
+    {
+      "type": "count",
+      "alias": "ohFirstName",
+      "where": {
+        "firstName": {
+          "like": "oh"
+        }
+      }
+    }
+  ]
+}
+```
+
+Example response:
+
+```json
+{
+  "ohFirstName": 2
+}
+```
+
 The aggregated field eg `count` will appear as if it is a column of the root model.
 
 ### Basic examples

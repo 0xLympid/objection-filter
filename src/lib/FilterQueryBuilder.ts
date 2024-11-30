@@ -16,6 +16,7 @@
  * in the same scope, since there's a join
  */
 
+import { Knex } from 'knex';
 import _ from 'lodash';
 import {
   QueryBuilder,
@@ -98,6 +99,9 @@ export default class FilterQueryBuilder<
         this.utils,
       );
     aggregations && applyAggregations(aggregations, this._builder, this.utils);
+    aggregations &&
+      applyAggregationsCurrentModel(aggregations, this._builder, this.utils);
+
     applyInclude(include, this._builder);
 
     applyFields(fields, this._builder);
@@ -136,6 +140,25 @@ export default class FilterQueryBuilder<
     return count;
   }
 }
+
+const extractWhereClause = function <M extends BaseModel>(
+  queryBuilder: QueryBuilder<M>,
+  knex: Knex,
+): string {
+  const sqlObject = queryBuilder.toKnexQuery().toSQL();
+  console.log('sqlObject', sqlObject);
+  const rawSQL = sqlObject.sql;
+  const bindings = sqlObject.bindings;
+
+  const whereStartIndex = rawSQL.toLowerCase().indexOf('where');
+  if (whereStartIndex === -1) {
+    return ''; // No WHERE clause present
+  }
+
+  const whereClause = rawSQL.slice(whereStartIndex);
+
+  return knex.raw(whereClause, bindings).toString();
+};
 
 /**
  * Based on a relation string, get the outer most model
@@ -192,11 +215,13 @@ const buildAggregation = function <M extends BaseModel>(
     relation,
     where,
     distinct = false,
-    alias: columnAlias = 'count',
+    alias,
     type = 'count',
     field,
   } = aggregation;
   const { onAggBuild } = utils;
+
+  const columnAlias = alias || type;
 
   // Do some initial validation
   if (!aggregationFunctions.includes(type)) {
@@ -204,6 +229,28 @@ const buildAggregation = function <M extends BaseModel>(
   }
   if (type !== 'count' && !field) {
     throw new Error(`Must specify "field" with [${type}] aggregation`);
+  }
+
+  if (!relation) {
+    const distinctTag = distinct ? 'distinct ' : '';
+
+    let whereClause = '';
+
+    if (where) {
+      const requireQuery = applyRequire(
+        where,
+        Model.query() as unknown as QueryBuilder<M>,
+        utils,
+      );
+      whereClause = `FILTER (${extractWhereClause(requireQuery, knex)})`;
+    }
+
+    return builder.select(
+      knex.raw(`${type}(${distinctTag}??) ${whereClause} as ??`, [
+        field ? `transactions.${field}` : 'transactions.id',
+        columnAlias,
+      ]),
+    );
   }
 
   const baseIdColumn: string[] =
@@ -286,11 +333,29 @@ const buildAggregation = function <M extends BaseModel>(
   return aggregationQuery;
 };
 
+const applyAggregationsCurrentModel = function <M extends BaseModel>(
+  aggregations: AggregationConfig[],
+  builder: QueryBuilder<M>,
+  utils: OperationUtils<M>,
+) {
+  aggregations = aggregations.filter(({ relation }) => !relation);
+
+  if (aggregations.length === 0) {
+    return;
+  }
+
+  aggregations.map((aggregation) =>
+    buildAggregation(aggregation, builder, utils),
+  );
+};
+
 const applyAggregations = function <M extends BaseModel>(
   aggregations: AggregationConfig[],
   builder: QueryBuilder<M>,
   utils: OperationUtils<M>,
 ) {
+  aggregations = aggregations.filter(({ relation }) => relation);
+
   if (aggregations.length === 0) {
     return;
   }
