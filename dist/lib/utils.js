@@ -64,14 +64,14 @@ function Operations(options) {
             return builder.where(property, '>=', operand);
         },
         '!=': (property, operand, builder) => {
-            return builder
-                .whereNot(property, '=', operand)
-                .orWhereNull(property);
+            return builder.where((query) => {
+                query.whereNot(property, '=', operand).orWhereNull(property);
+            });
         },
         'neq': (property, operand, builder) => {
-            return builder
-                .whereNot(property, '=', operand)
-                .orWhereNull(property);
+            return builder.where((query) => {
+                query.whereNot(property, '=', operand).orWhereNull(property);
+            });
         },
         'eq': (property, operand, builder) => {
             return builder.where(property, operand);
@@ -88,10 +88,11 @@ function Operations(options) {
                 .whereIn(property, operand));
         },
         'nin': (property, operand, builder) => {
-            return (builder
-                // HACK: Use an unknown cast temporarily
-                .whereNotIn(property, operand)
-                .orWhereNull(property));
+            return builder.where((query) => {
+                query
+                    .whereNotIn(property, operand)
+                    .orWhereNull(property);
+            });
         },
         'exists': (property, operand, builder) => {
             return operand

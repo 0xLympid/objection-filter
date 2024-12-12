@@ -105,7 +105,6 @@ export default class FilterQueryBuilder<
     applyInclude(include, this._builder);
 
     applyFields(fields, this._builder);
-
     return this._builder;
   }
 

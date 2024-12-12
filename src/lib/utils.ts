@@ -92,14 +92,14 @@ export function Operations<M extends Model>(
       return builder.where(property, '>=', operand as number);
     },
     '!=': (property, operand, builder) => {
-      return builder
-        .whereNot(property, '=', operand as number)
-        .orWhereNull(property);
+      return builder.where((query) => {
+        query.whereNot(property, '=', operand as number).orWhereNull(property);
+      });
     },
     'neq': (property, operand, builder) => {
-      return builder
-        .whereNot(property, '=', operand as number)
-        .orWhereNull(property);
+      return builder.where((query) => {
+        query.whereNot(property, '=', operand as number).orWhereNull(property);
+      });
     },
     'eq': (property, operand, builder) => {
       return builder.where(property, operand as PrimitiveValue);
@@ -118,12 +118,11 @@ export function Operations<M extends Model>(
       );
     },
     'nin': (property, operand, builder) => {
-      return (
-        builder
-          // HACK: Use an unknown cast temporarily
+      return builder.where((query) => {
+        query
           .whereNotIn(property, operand as unknown as QueryBuilder<M>)
-          .orWhereNull(property)
-      );
+          .orWhereNull(property);
+      });
     },
     'exists': (property, operand, builder) => {
       return operand
